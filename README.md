@@ -2,9 +2,7 @@
 
 ![SAP Commerce 1811+](https://img.shields.io/badge/Commerce-1811+-0051ab?logo=SAP)
 
-Sensible defaults for data retention and cleanup for SAP Commerce
-
-Based on my CX Works article [Data Maintenance and Cleanup][article]
+Sensible defaults for data retention and cleanup for SAP Commerce, based on my CX Works article [Data Maintenance and Cleanup][article]
 
 
 
