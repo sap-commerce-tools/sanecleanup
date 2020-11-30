@@ -10,7 +10,7 @@ INSERT FlexibleSearchRetentionRule;code[unique=true];searchQuery;actionReference
 
 # JOB
 INSERT RetentionJob; code[unique=true]; retentionRule(code); batchSize
-; cronJobHistoryRetentionJob; cronJobHistoryRetentionRule; 100
+; cronJobHistoryRetentionJob; cronJobHistoryRetentionRule; 1000
 
 # CRON JOB
 INSERT CronJob;code[unique=true]; job(code); sessionLanguage(isoCode)[default=en]
