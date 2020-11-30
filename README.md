@@ -26,6 +26,16 @@ Consider cleaning them up via an impex file first. See my [article][one] for a h
 
 Minimum required SAP Commerce version: 1811
 
+## Support 
+
+Please open an [issue] describing your problem or your feature request.
+
+## Contributing
+
+Any and all pull requests are welcome.\
+Please describe your change and the motiviation behind it.
+
+[issue]: https://github.com/sap-commerce-tools/sanecleanup/issues
 [article]: https://www.sap.com/cxworks/article/456895555/data_maintenance_and_cleanup
 [one]: https://www.sap.com/cxworks/article/456895555/data_maintenance_and_cleanup#DataMaintenanceandCleanup-One-timeCleanUp
 [stored]: https://help.sap.com/viewer/d0224eca81e249cb821f2cdf45a82ace/LATEST/en-US/076cde47206048b9ada3fa0d336c1060.html
