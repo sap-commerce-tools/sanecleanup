@@ -1,0 +1,11 @@
+
+# Import config properties into impex macros
+UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
+$sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
+$cronExpression=$config-version.gc.cron
+
+INSERT_UPDATE CronJob;code[unique=true];job(code);sessionLanguage(isoCode)[default = $sessionLanguage]
+;cmsVersionGCCronJob;cmsVersionGCJob;
+
+INSERT_UPDATE Trigger;cronjob(code)[unique=true];cronExpression
+;cmsVersionGCCronJob; $cronExpression

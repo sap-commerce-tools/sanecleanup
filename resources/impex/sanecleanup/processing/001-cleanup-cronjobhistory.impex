@@ -1,0 +1,88 @@
+# ---------------------------------------------------------------------------
+# Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved.
+# ---------------------------------------------------------------------------
+# ref. https://launchpad.support.sap.com/#/notes/2848601
+
+# Import config properties into impex macros
+UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
+$sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
+
+# RETENTION RULE for cleaning up cron job history items
+INSERT_UPDATE FlexibleSearchRetentionRule;code[unique=true];searchQuery;actionReference;
+"#% beforeEach:
+import de.hybris.platform.core.Registry;
+import de.hybris.platform.cronjob.model.CronJobModel;
+CronJobModel cronJob;
+try
+{
+    cronJob = Registry.getApplicationContext().getBean(""cronJobService"").getCronJob(""cronJobHistoryRetentionCronJob"");
+}
+catch (Exception e)
+{
+    cronJob = null;
+}
+if (cronJob != null)
+{
+    line.clear();
+}"
+; cronJobHistoryRetentionRule; SELECT {h1:PK}, {h1:itemtype} FROM {CronJobHistory as h1} WHERE {h1:creationtime} < (SELECT max FROM ({{SELECT max({h2:creationtime}) as max, {h2:cronjob} as cronjob FROM {CronJobHistory as h2} GROUP BY {h2:cronjob} }}) temptable where cronjob = {h1:cronjob}); basicRemoveCleanupAction;
+
+# JOB
+INSERT_UPDATE RetentionJob; code[unique=true]; retentionRule(code); batchSize
+"#% beforeEach:
+import de.hybris.platform.core.Registry;
+import de.hybris.platform.cronjob.model.CronJobModel;
+CronJobModel cronJob;
+try
+{
+    cronJob = Registry.getApplicationContext().getBean(""cronJobService"").getCronJob(""cronJobHistoryRetentionCronJob"");
+}
+catch (Exception e)
+{
+    cronJob = null;
+}
+if (cronJob != null)
+{
+    line.clear();
+}"
+; cronJobHistoryRetentionJob; cronJobHistoryRetentionRule; 1000
+
+# CRON JOB
+INSERT_UPDATE CronJob;code[unique=true]; job(code); sessionLanguage(isoCode)[default=$sessionLanguage]
+"#% beforeEach:
+import de.hybris.platform.core.Registry;
+import de.hybris.platform.cronjob.model.CronJobModel;
+CronJobModel cronJob;
+try
+{
+    cronJob = Registry.getApplicationContext().getBean(""cronJobService"").getCronJob(""cronJobHistoryRetentionCronJob"");
+}
+catch (Exception e)
+{
+    cronJob = null;
+}
+if (cronJob != null)
+{
+    line.clear();
+}"
+; cronJobHistoryRetentionCronJob; cronJobHistoryRetentionJob;
+
+INSERT_UPDATE Trigger; cronJob(code)[unique=true]; cronExpression
+# every hour
+"#% beforeEach:
+import de.hybris.platform.core.Registry;
+import de.hybris.platform.cronjob.model.CronJobModel;
+CronJobModel cronJob;
+try
+{
+    cronJob = Registry.getApplicationContext().getBean(""cronJobService"").getCronJob(""cronJobHistoryRetentionCronJob"");
+}
+catch (Exception e)
+{
+    cronJob = null;
+}
+if (cronJob != null)
+{
+    line.clear();
+}"
+;cronJobHistoryRetentionCronJob; 0 0 0/1 * * ? ;

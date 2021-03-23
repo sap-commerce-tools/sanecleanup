@@ -1,0 +1,13 @@
+# enable ootb cronjob logs cleanup
+# if you have never enabled this before, have a look at bulkdelete-cronjoblogs.impex for a cronjob that you can use to
+# delete a large number of stale job logs
+
+# Import config properties into impex macros
+UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
+$sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
+
+INSERT_UPDATE CronJob; code[unique = true]      ; job(code)                 ;queryCount; sessionLanguage(isoCode)[default = $sessionLanguage]
+              ; cronJobLogCleanupCronJob ; cleanUpLogsJobPerformable ; 2147483647 ;
+INSERT_UPDATE Trigger; cronJob(code)[unique = true]; cronExpression
+# every hour
+              ; cronJobLogCleanupCronJob    ; 0 0 0/1 * * ?

@@ -1,0 +1,18 @@
+# delete all stored sessions one day after there last update
+
+# Import config properties into impex macros
+UPDATE GenericItem[processor = de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor]; pk[unique = true]
+$sessionLanguage = $config-sanecleanup.jobs.sessionlanguage
+
+$oneDay = 86400
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]   ; searchQuery; retentionTimeSeconds; actionReference          ;
+                                  ; storedHttpSessionRule ; "select {s:pk}, {s:itemtype}
+   from {StoredHttpSession as s}
+   where {s:modifiedTime} < ?CALC_RETIREMENT_TIME"                     ; $oneDay             ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]         ; retentionRule(code)   ; batchSize
+                   ; storedHttpSessionCleanupJob ; storedHttpSessionRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]             ; job(code)                   ; sessionLanguage(isoCode)[default = $sessionLanguage]
+              ; storedHttpSessionCleanupCronJob ; storedHttpSessionCleanupJob ;
+INSERT_UPDATE Trigger; cronJob(code)[unique = true]    ; cronExpression
+# every 30 minutes
+              ; storedHttpSessionCleanupCronJob ; 0 0/30 * * * ?

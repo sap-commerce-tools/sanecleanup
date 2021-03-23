@@ -5,4 +5,16 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+  <bean id="saneCleanupListener" class="mpern.sap.cleanup.AfterInitListener" parent="abstractEventListener">
+    <constructor-arg ref="importService" />
+    <constructor-arg ref="flexibleSearchService" />
+    <constructor-arg ref="modelService" />
+    <constructor-arg ref="userService" />
+  </bean>
+
+  <bean id="cmsVersionGCPerformable" class="mpern.sap.cleanup.cms2.CMSVersionGCPerformable" parent="abstractJobPerformable">
+    <constructor-arg ref="configurationService" />
+    <constructor-arg ref="cmsVersionGCService" />
+    <constructor-arg ref="jdbcTemplate" />
+  </bean>
 </beans>

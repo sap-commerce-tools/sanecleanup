@@ -1,0 +1,7 @@
+# https://help.sap.com/viewer/9d346683b0084da2938be8a285c0c27a/LATEST/en-US/7482a16e3d7c4848a5a7bec7185132c5.html
+
+UPDATE MaintenanceCleanupJob;code[unique=true];active;
+;droolsRulesMaintenanceCleanupPerformable;true
+
+UPDATE Trigger;cronJob(code)[unique=true];active
+;droolsRulesMaintenanceCleanupJob;true

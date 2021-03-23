@@ -4,6 +4,8 @@
   <extension abstractclassprefix="Generated" classprefix="Sanecleanup" jaloLogicFree="true"
              managername="SanecleanupManager" managersuperclass="de.hybris.platform.jalo.extension.Extension"
              name="sanecleanup" usemaven="false">
+    <requires-extension name="commerceservices" />
+    <requires-extension name="cms2" />
     <coremodule generated="true" manager="de.hybris.platform.jalo.extension.GenericManager"
                 packageroot="mpern.sap.cleanup"/>
   </extension>

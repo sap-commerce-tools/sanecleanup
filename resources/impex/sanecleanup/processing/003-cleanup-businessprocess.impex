@@ -1,0 +1,18 @@
+# Import config properties into impex macros
+UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
+$sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
+
+$twoWeeks = 1209600
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+                                  ; businessProcessRule ; "
+ SELECT {p:pk}, {p:itemtype}
+    FROM {BusinessProcess AS p JOIN ProcessState AS s ON {p:state} = {s:pk} }
+   WHERE {s:code} IN ('SUCCEEDED')
+     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $twoWeeks           ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+                   ; businessProcessCleanupJob ; businessProcessRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+              ; businessProcessCleanupCronJob ; businessProcessCleanupJob ;
+INSERT_UPDATE Trigger; cronJob(code)[unique = true]  ; cronExpression
+# every day at midnight
+              ; businessProcessCleanupCronJob ; 0 0 0 * * ?
