@@ -1,0 +1,102 @@
+# Import config properties into impex macros
+UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
+$sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
+
+$twoWeeks = 1209600
+
+# @readme ImpExImportCronJob (distributed impex)
+# - More than ~10 `FINISHED` distributed impex jobs?
+# - More than a few `PAUSED` jobs? You may have a faulty distributed impex script.
+# SELECT
+#   {s:code} AS "status",
+#   COUNT({i:pk}) AS "total",
+#   MIN({i:modifiedtime}) AS "oldest",
+#   MAX({i:modifiedtime}) AS "newest"
+# FROM
+#   {ImpExImportCronJob AS i
+#   LEFT JOIN
+#     CronJobStatus AS s
+#     ON {i:status} = {s:pk} }
+# WHERE
+#   {i:code} LIKE 'distributed-impex-%'
+# GROUP BY
+#   {s:code}
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
+; distributedImpexCronJobRule        ; "
+SELECT {i:pk}, {i:itemType}
+  FROM {ImpExImportCronJob AS i}
+ WHERE {i:code} LIKE 'distributed-impex-%'
+   AND {i:modifiedtime} < ?CALC_RETIREMENT_TIME"                             ; $twoWeeks           ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
+; distributedImpexCronJobCleanupJob ; distributedImpexCronJobRule     ; 1000
+INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; distributedImpexCronJobCleanupCronJob ; distributedImpexCronJobCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at 04:30
+; distributedImpexCronJobCleanupCronJob    ; 0 30 4 * * ?
+
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
+; distributedImpexJobRule     ; "
+  SELECT {j:pk}, {j:itemtype}
+    FROM {ImpExImportJob AS j LEFT JOIN ImpExImportCronJob as cj on {cj:job} = {j:pk} }
+   WHERE {j:code} LIKE 'distributed-impex-%'
+     AND {cj:pk} IS NULL"                        ; 0       ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
+; distributedImpexJobCleanupJob ; distributedImpexJobRule     ; 1000
+INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; distributedImpexJobCleanupCronJob ; distributedImpexJobCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at 05:00
+; distributedImpexJobCleanupCronJob    ; 0 0 5 * * ?
+
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
+; distributedImportProcessRule     ; "
+  SELECT {p:pk}, {p:itemtype}
+    FROM {DistributedImportProcess AS p LEFT JOIN ImpExImportCronJob as cj on {p:impExImportCronJob} = {cj:pk} }
+   WHERE {cj:pk} IS NULL"                        ; 0       ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
+; distributedImportProcessCleanupJob ; distributedImportProcessRule     ; 1000
+INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; distributedImportProcessCleanupCronJob ; distributedImportProcessCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at 05:00
+; distributedImportProcessCleanupCronJob    ; 0 0 5 * * ?
+
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
+; importBatchRule     ; "
+  SELECT {b:pk}, {b:itemtype}
+    FROM {ImportBatch AS b LEFT JOIN DistributedImportProcess as p on {b:process} = {p:pk} }
+   WHERE {p:pk} IS NULL"                        ; 0       ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
+; importBatchCleanupJob ; importBatchRule     ; 1000
+INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; importBatchCleanupCronJob ; importBatchCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at 05:30
+; importBatchCleanupCronJob    ; 0 30 5 * * ?
+
+# @readme ImportBatchContent
+# Are there any left-over distributed import batches?
+# SELECT
+#   COUNT({c:pk}) AS "total",
+#   MIN({c:modifiedTime}) AS "oldest",
+#   MAX({c:modifiedTime}) AS "newest"
+# FROM
+#   {ImportBatchContent AS c
+#   LEFT JOIN
+#     ImportBatch AS b
+#     ON {b:importContentCode} = {c:code} }
+# WHERE
+#   {b:pk} IS NULL
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
+; importBatchContentRule     ; "
+  SELECT {c:pk}, {c:itemtype}
+    FROM {ImportBatchContent AS c LEFT JOIN ImportBatch as b on {b:importContentCode} = {c:code} }
+   WHERE {b:pk} IS NULL"                        ; 0       ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
+; importBatchContentCleanupJob ; importBatchContentRule     ; 1000
+INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; importBatchContentCleanupCronJob ; importBatchContentCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at 06:00
+; importBatchContentCleanupCronJob    ; 0 0 6 * * ?

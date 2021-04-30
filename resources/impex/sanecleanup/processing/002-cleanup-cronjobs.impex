@@ -6,12 +6,41 @@ $sessionLanguage = $config-sanecleanup.jobs.sessionlanguage
 
 $twoWeeks = 1209600
 $oneDay = 86400
+
+# @readme CronJob (auto-generated)
+# Are there too many (>10) outdated, auto-geneated jobs in your system?
+# SELECT
+#   {t:code} AS "CronJob Type",
+#   COUNT({c:pk}) AS "total",
+#   MIN({c:modifiedtime}) AS "oldest",
+#   MAX({c:modifiedtime}) AS "newest"
+# FROM
+#   {CronJob AS c
+#   JOIN
+#     ComposedType AS t
+#     ON {c:itemtype} = {t:pk}
+#   LEFT JOIN
+#     TRIGGER AS trg
+#     ON {trg:cronjob} = {c:pk} }
+# WHERE
+#   {trg:pk} IS NULL
+#   AND {c:code} LIKE '00%'
+#   AND {t:code} IN
+#   (
+#     'ImpExImportCronJob',
+#     'CatalogVersionSyncCronJob',
+#     'SolrIndexerCronJob'
+#   )
+# GROUP BY
+#   {t:code}
+# ORDER BY
+#   "total" DESC
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
                                   ; cronJobRule        ; "
 SELECT {c:pk}, {c:itemType}
   FROM {CronJob AS c JOIN ComposedType AS t ON {c:itemtype} = {t:pk} LEFT JOIN Trigger AS trg ON {trg:cronjob} = {c:pk} }
  WHERE {trg:pk} IS NULL
-   AND {c:code} LIKE '00______%'
+   AND {c:code} LIKE '00%'
    AND {t:code} IN ( 'ImpExImportCronJob', 'CatalogVersionSyncCronJob', 'SolrIndexerCronJob' )
    AND {c:endTime} < ?CALC_RETIREMENT_TIME"                             ; $twoWeeks           ; basicRemoveCleanupAction ;
                                   ; solrJobRule     ; "
@@ -26,7 +55,7 @@ INSERT_UPDATE RetentionJob; code[unique = true]; retentionRule(code); batchSize
 INSERT_UPDATE CronJob; code[unique = true]   ; job(code)         ; sessionLanguage(isoCode)[default = $sessionLanguage]
               ; cronJobCleanupCronJob ; cronJobCleanupJob ;
               ; solrJobCleanupCronJob ; solrJobCleanupJob ;
-INSERT_UPDATE Trigger; cronJob(code)[unique = true]; cronExpression
-# every day at midnight
-              ; cronJobCleanupCronJob       ; 0 0 0 * * ?
-              ; solrJobCleanupCronJob       ; 0 0 0 * * ?
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at 04:00
+              ; cronJobCleanupCronJob       ; 0 0 4 * * ?
+              ; solrJobCleanupCronJob       ; 0 0 4 * * ?

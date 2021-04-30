@@ -10,6 +10,46 @@ $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
 
 $twoWeeks = 1209600
 $fourWeeks = 2419200
+
+# @readme Cart
+# - Are there excessive amount of carts per site or per user?
+# - Too many saved carts?
+# - Stale (= old) carts?
+# SELECT
+#   {b:uid} AS "BaseSite",
+#   {u:uid} AS "User",
+#   CASE
+#     WHEN
+#       {c:saveTime} IS NULL
+#     THEN
+#       'regular'
+#     ELSE
+#       'saved'
+#   END
+#   AS "cart type",
+#   COUNT({c:pk}) AS "total",
+#   MIN({c:modifiedtime}) AS "oldest",
+#   MAX({c:modifiedtime}) AS "newest"
+# FROM
+#   { Cart AS c
+#   LEFT JOIN
+#     USER AS u
+#     ON {c:user} = {u:pk}
+#   LEFT JOIN
+#     BaseSite AS b
+#     ON {c:site} = {b:pk} }
+# GROUP BY
+#   {b:uid}, {u:uid},
+#   CASE
+#     WHEN
+#       {c:saveTime} IS NULL
+#     THEN
+#       'regular'
+#     ELSE
+#       'saved'
+#   END
+# ORDER BY
+#   "total" DESC
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
                                   ; cartRule           ; "
   SELECT {c:pk}, {c:itemtype}
@@ -30,7 +70,7 @@ INSERT_UPDATE RetentionJob; code[unique = true]     ; retentionRule(code); batch
 INSERT_UPDATE CronJob; code[unique = true]         ; job(code)               ; sessionLanguage(isoCode)[default = $sessionLanguage]
               ; cartCleanupCronJob          ; cartCleanupJob          ;
               ; anonymousCartCleanupCronJob ; anonymousCartCleanupJob ;
-INSERT_UPDATE Trigger; cronJob(code)[unique = true]; cronExpression
-# every day at midnight
-              ; cartCleanupCronJob          ; 0 0 0 * * ?
-              ; anonymousCartCleanupCronJob ; 0 0 0 * * ?
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at 03:00
+              ; cartCleanupCronJob          ; 0 0 3 * * ?
+              ; anonymousCartCleanupCronJob ; 0 0 3 * * ?

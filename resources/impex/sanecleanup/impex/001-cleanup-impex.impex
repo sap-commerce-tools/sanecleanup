@@ -1,0 +1,30 @@
+# Import config properties into impex macros
+UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
+$sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
+
+$twoWeeks = 1209600
+
+# @readme ImpexMedia
+# Are there more than a handful (>100) of generated impex medias?
+# SELECT
+#   COUNT(*)
+# FROM
+#   {ImpexMedia AS i}
+# WHERE
+#   (
+#     {i:code} LIKE '0_______'
+#     OR {i:code} LIKE 'generated impex media - %'
+#   )
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
+                                  ; impexMediaRule     ; "
+  SELECT {i:pk}, {i:itemtype}
+    FROM {ImpexMedia AS i}
+   WHERE ( {i:code} LIKE '0_______' OR {i:code} LIKE 'generated impex media - %' )
+     AND {i:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $twoWeeks           ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
+                   ; impexMediaCleanupJob ; impexMediaRule     ; 1000
+INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
+              ; impexMediaCleanupCronJob ; impexMediaCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at 05:00
+              ; impexMediaCleanupCronJob    ; 0 0 5 * * ?

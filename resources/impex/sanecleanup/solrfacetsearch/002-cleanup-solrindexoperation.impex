@@ -1,0 +1,26 @@
+$twoDays = 172800
+
+# @readme SolrIndexOperation
+# Too many solr operations (more than ~100 per index)?
+# SELECT {i:qualifier},
+#        COUNT({o:pk}) AS "total",
+#        MIN({o:modifiedTime}) AS "oldest",
+#        MAX({o:modifiedTime}) AS "newest"
+# FROM {SolrIndexOperation AS o
+#       LEFT JOIN SolrIndex AS i
+#       ON {o:index} = {i:pk} }
+# GROUP BY {i:qualifier}
+# ORDER BY "total" DESC
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
+; solrIndexOperationRule     ; "
+  SELECT {o:pk}, {o:itemtype}
+    FROM {SolrIndexOperation AS o}
+   WHERE {o:endTime} IS NOT NULL
+     AND {o:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $twoDays           ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
+; solrIndexOperationCleanupJob ; solrIndexOperationRule     ; 1000
+INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = en]
+; solrIndexOperationCleanupCronJob ; solrIndexOperationCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at 04:00
+; solrIndexOperationCleanupCronJob    ; 0 0 4 * * ?

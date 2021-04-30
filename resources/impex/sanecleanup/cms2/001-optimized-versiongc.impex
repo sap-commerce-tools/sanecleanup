@@ -2,10 +2,25 @@
 # Import config properties into impex macros
 UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
-$cronExpression=$config-version.gc.cron
 
-INSERT_UPDATE CronJob;code[unique=true];job(code);sessionLanguage(isoCode)[default = $sessionLanguage]
-;cmsVersionGCCronJob;cmsVersionGCJob;
+INSERT_UPDATE CronJob;code[unique=true];job(code);queryCount;sessionLanguage(isoCode)[default = $sessionLanguage]
+;jdbcVersionGCCronJob;jdbcVersionGCJob;1000;
 
-INSERT_UPDATE Trigger;cronjob(code)[unique=true];cronExpression
-;cmsVersionGCCronJob; $cronExpression
+INSERT Trigger;cronjob(code)[unique=true];cronExpression
+;jdbcVersionGCCronJob; 0 0 0 * * ?
+
+# delete cms version gc business processes
+$oneDay=86400
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+; cmsVersionGCProcessRule ; "
+  SELECT {p:pk}, {p:itemtype}
+    FROM {BusinessProcess AS p }
+   WHERE {p:code} LIKE 'cmsVersionGCProcess%'
+     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME" ; $oneDay ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+; cmsVersionGCProcessCleanupJob ; cmsVersionGCProcessRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; cmsVersionGCProcessCleanupCronJob ; cmsVersionGCProcessCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
+# every day at 03:00
+; cmsVersionGCProcessCleanupCronJob ; 0 0 3 * * ?

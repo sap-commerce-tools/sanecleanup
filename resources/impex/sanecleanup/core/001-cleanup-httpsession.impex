@@ -5,6 +5,16 @@ UPDATE GenericItem[processor = de.hybris.platform.commerceservices.impex.impl.Co
 $sessionLanguage = $config-sanecleanup.jobs.sessionlanguage
 
 $oneDay = 86400
+
+# @readme StoredHttpSession
+# Excessive amount of session? This is hard to generalize as it highly depends on your site's traffic, but if you are near or over 5 digits, it's probably too much.
+#
+# Simarly, stale sessions (e.g older than a day) don't need to be retained.
+# SELECT
+#    COUNT({s:pk}) AS "total",
+#    MIN({s:modifiedtime}) AS "oldest",
+#    MAX({s:modifiedtime}) AS "newest"
+# FROM {StoredHttpSession AS s}
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]   ; searchQuery; retentionTimeSeconds; actionReference          ;
                                   ; storedHttpSessionRule ; "select {s:pk}, {s:itemtype}
    from {StoredHttpSession as s}
@@ -13,6 +23,6 @@ INSERT_UPDATE RetentionJob; code[unique = true]         ; retentionRule(code)   
                    ; storedHttpSessionCleanupJob ; storedHttpSessionRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]             ; job(code)                   ; sessionLanguage(isoCode)[default = $sessionLanguage]
               ; storedHttpSessionCleanupCronJob ; storedHttpSessionCleanupJob ;
-INSERT_UPDATE Trigger; cronJob(code)[unique = true]    ; cronExpression
+INSERT Trigger; cronJob(code)[unique = true]    ; cronExpression
 # every 30 minutes
               ; storedHttpSessionCleanupCronJob ; 0 0/30 * * * ?

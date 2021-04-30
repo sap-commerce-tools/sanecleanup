@@ -1,26 +1,14 @@
-# https://www.sap.com/cxworks/article/538808299/top_10_recommendations_for_improving_the_performance_of_your_commerce_cloud_promotion_engine
-# Tip #7
-
 # Import config properties into impex macros
 UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
 
-# @readme AbstractRule
-# Are there any outdated rules? i.e rules that aren't valid anymore because their enddate is in the past.
-#
-# Warning: change `getutcdate()` to your DBMS (for HANA/MySQL: `now()` )
-# SELECT COUNT({ar:pk}),
-#   MIN({ar:modifiedtime}) AS "oldest",
-#   MAX({ar:modifiedtime}) AS "newest"
-#  FROM {AbstractRule AS ar}, {RuleStatus AS rs}
-# WHERE {ar:status} = {rs:pk}
-#   AND {rs:code} = 'PUBLISHED'
-#   AND {ar:enddate} IS NOT NULL
-#   AND {ar:enddate} < getutcdate()
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
-; abstractRuleRule ; "
-SELECT {ar:pk}, {ar:itemtype}
-  FROM {AbstractRule AS ar}, {RuleStatus AS rs}
+; orphanedPromotionActionParameterRule ; "
+SELECT {ap:pk}, {ap:itemtype}
+  FROM {
+  PromotionActionParameter AS ap
+  LEFT JOIN RuleBasedPotentialPromotionMessageAction AS a ON {a:parameters} LIKE
+  }
  WHERE {ar:status} = {rs:pk}
    AND {rs:code} = 'PUBLISHED'
    AND {ar:enddate} IS NOT NULL
@@ -29,6 +17,7 @@ INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; ba
 ; abstractRuleCleanupJob ; abstractRuleRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; abstractRuleCleanupCronJob ; abstractRuleCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
+INSERT_UPDATE Trigger; cronJob(code)[unique = true]  ; cronExpression
 # every day at midnight
 ; abstractRuleCleanupCronJob ; 0 0 0 * * ?
+

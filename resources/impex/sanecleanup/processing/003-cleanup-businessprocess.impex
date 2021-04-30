@@ -2,17 +2,154 @@
 UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
 
-$twoWeeks = 1209600
+$fourWeeks = 2419200
+$sixMonths = 15778476
+
+# @readme BusinessProcess
+# Are there too many (let's say > 1000) or very old BusinessProcess in your system?
+#
+# Also, if a lot of processes are stuck in "RUNNING" / "WAITING", you have to investigate what's wrong.
+# (What is causing your processes to be stuck?)
+# SELECT {p:processDefinitionName},
+#        {s:code} AS "status",
+#        COUNT({p:pk}) AS "total",
+#        MIN({p:modifiedTime}) AS "oldest",
+#        MAX({p:modifiedTime}) AS "newest"
+# FROM {BusinessProcess AS p LEFT JOIN ProcessState AS s ON {p:state} = {s:pk} }
+# GROUP BY {p:processDefinitionName}, {s:code}
+# ORDER BY "total" DESC
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
-                                  ; businessProcessRule ; "
- SELECT {p:pk}, {p:itemtype}
+; businessProcessRule ; "
+  SELECT {p:pk}, {p:itemtype}
     FROM {BusinessProcess AS p JOIN ProcessState AS s ON {p:state} = {s:pk} }
    WHERE {s:code} IN ('SUCCEEDED')
-     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $twoWeeks           ; basicRemoveCleanupAction ;
+     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $fourWeeks           ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
                    ; businessProcessCleanupJob ; businessProcessRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
               ; businessProcessCleanupCronJob ; businessProcessCleanupJob ;
-INSERT_UPDATE Trigger; cronJob(code)[unique = true]  ; cronExpression
+INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
 # every day at midnight
               ; businessProcessCleanupCronJob ; 0 0 0 * * ?
+
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+; failedBusinessProcessRule ; "
+  SELECT {p:pk}, {p:itemtype}
+    FROM {BusinessProcess AS p JOIN ProcessState AS s ON {p:state} = {s:pk} }
+   WHERE {s:code} IN ('FAILED', 'ERROR')
+     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $sixMonths           ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+; failedBusinessProcessCleanupJob ; failedBusinessProcessRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; failedBusinessProcessCleanupCronJob ; failedBusinessProcessCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
+# every day at midnight
+; failedBusinessProcessCleanupCronJob ; 0 0 0 * * ?
+
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+; progressBusinessProcessRule ; "
+  SELECT {p:pk}, {p:itemtype}
+    FROM {BusinessProcess AS p JOIN ProcessState AS s ON {p:state} = {s:pk} }
+   WHERE {s:code} IN ('CREATED', 'RUNNING', 'WAITING')
+     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $sixMonths           ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+; progressBusinessProcessCleanupJob ; progressBusinessProcessRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; progressBusinessProcessCleanupCronJob ; progressBusinessProcessCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
+# every day at midnight
+; progressBusinessProcessCleanupCronJob ; 0 0 0 * * ?
+
+# @readme TaskCondition
+# Is there an excessive amount of "premature events"? Or very old (older than a a few weeks) events?
+#
+# https://help.sap.com/viewer/d0224eca81e249cb821f2cdf45a82ace/2011/en-US/7e8ff9d7653f43e8890bc8eb395d52a7.html
+# SELECT COUNT({tc:pk}),
+#   MIN({tc:modifiedtime}) AS "oldest",
+#   MAX({tc:modifiedtime}) AS "newest"
+#   FROM {TaskCondition AS tc }
+#  WHERE {tc:task} IS NULL
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+; prematureTaskConditionRule ; "
+  SELECT {tc:pk}, {tc:itemtype}
+    FROM {TaskCondition AS tc }
+   WHERE {tc:task} IS NULL
+     AND {tc:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $fourWeeks ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+; prematureTaskConditionCleanupJob ; prematureTaskConditionRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; prematureTaskConditionCleanupCronJob ; prematureTaskConditionCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
+# every day at 02:00
+; prematureTaskConditionCleanupCronJob ; 0 0 2 * * ?
+
+#### delete orphans if BusinessProcess / Task is gone. this shouldn't happen, but you never know
+
+# TaskCondition - usually assigned to a task.
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+; orphanedTaskConditionRule ; "
+  SELECT {tc:pk}, {tc:itemtype}
+    FROM {TaskCondition AS tc LEFT JOIN Task AS t ON {tc:task} = {t:pk} }
+   WHERE {tc:task} IS NOT NULL
+     AND {t:pk} IS NULL"                         ; 0 ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+; orphanedTaskConditionCleanupJob ; orphanedTaskConditionRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; orphanedTaskConditionCleanupCronJob ; orphanedTaskConditionCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
+# every day at 02:00
+; orphanedTaskConditionCleanupCronJob ; 0 0 2 * * ?
+
+# ProcessTask
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+; orphanedProcessTaskRule ; "
+  SELECT {pt:pk}, {pt:itemtype}
+    FROM {ProcessTask AS pt LEFT JOIN BusinessProcess AS bp ON {pt:process} = {bp:pk} }
+   WHERE (
+     ( {pt:process} IS NOT NULL AND {bp:pk} IS NULL )
+     OR
+     {pt:process} IS NULL
+   )"                         ; 0 ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+; orphanedProcessTaskCleanupJob ; orphanedProcessTaskRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; orphanedProcessTaskCleanupCronJob ; orphanedProcessTaskCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
+# every day at 02:00
+; orphanedProcessTaskCleanupCronJob ; 0 0 2 * * ?
+
+# BusinessProcessParameter
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+; orphanedBusinessProcessParameterRule ; "
+  SELECT {p:pk}, {p:itemtype}
+    FROM {BusinessProcessParameter AS p LEFT JOIN BusinessProcess AS bp ON {p:process} = {bp:pk} }
+   WHERE (
+     ( {p:process} IS NOT NULL AND {bp:pk} IS NULL )
+     OR
+     {p:process} IS NULL
+   )"                         ; 0 ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+; orphanedBusinessProcessParameterCleanupJob ; orphanedBusinessProcessParameterRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; orphanedBusinessProcessParameterCleanupCronJob ; orphanedBusinessProcessParameterCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
+# every day at 02:00
+; orphanedBusinessProcessParameterCleanupCronJob ; 0 0 2 * * ?
+
+# ProcessTaskLog
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+; orphanedProcessTaskLogRule ; "
+  SELECT {l:pk}, {l:itemtype}
+    FROM {ProcessTaskLog AS l LEFT JOIN BusinessProcess AS bp ON {l:process} = {bp:pk} }
+   WHERE (
+     ( {l:process} IS NOT NULL AND {bp:pk} IS NULL )
+     OR
+     {l:process} IS NULL
+   )"                         ; 0 ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+; orphanedProcessTaskLogCleanupJob ; orphanedProcessTaskLogRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; orphanedProcessTaskLogCleanupCronJob ; orphanedProcessTaskLogCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
+# every day at 02:00
+; orphanedProcessTaskLogCleanupCronJob ; 0 0 2 * * ?

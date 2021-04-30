@@ -7,7 +7,24 @@
 UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
 
-# RETENTION RULE for cleaning up cron job history items
+# @readme CronJobHistory
+# Is there any job with > 50 histories and/or histories older than an hour?
+#
+# This cleanup is enabled by default in recent SAP Commerce patch releases, so this query shouldn't find anything.
+# SELECT
+#   {cj:code},
+#   COUNT({h:pk}) AS "total",
+#   MIN({h:modifiedtime}) AS "oldest",
+#   MAX({h:modifiedtime}) AS "newest"
+# FROM
+#   {cronjobhistory AS h
+#   JOIN
+#     cronjob AS cj
+#     ON {h:cronjob} = {cj:pk} }
+# GROUP BY
+#   {cj:code}
+# ORDER BY
+#   "total" DESC
 INSERT_UPDATE FlexibleSearchRetentionRule;code[unique=true];searchQuery;actionReference;
 "#% beforeEach:
 import de.hybris.platform.core.Registry;
@@ -67,7 +84,7 @@ if (cronJob != null)
 }"
 ; cronJobHistoryRetentionCronJob; cronJobHistoryRetentionJob;
 
-INSERT_UPDATE Trigger; cronJob(code)[unique=true]; cronExpression
+INSERT Trigger; cronJob(code)[unique=true]; cronExpression
 # every hour
 "#% beforeEach:
 import de.hybris.platform.core.Registry;

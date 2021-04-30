@@ -7,7 +7,8 @@ import de.hybris.platform.cronjob.enums.CronJobStatus
 import de.hybris.platform.cronjob.enums.CronJobResult
 
 // all log files EXCEPT the five most recent logs per cronjob
-// warning: query uses MS SQL dialact for partioning the logs per cronjob
+// warning: query uses DBMS-specific dialact for partioning the logs per cronjob
+// query was tested on HANA and MS SQL
 def QUERY = '''
 SELECT t.pk
 FROM
