@@ -316,6 +316,63 @@ Are there are cronjob with more than ~10 logs and/or logs older than 14 days?
 (those are default values for log file retention)
 
 </td></tr>
+<tr><td>SavedValues,SavedValueEntry</td><td>
+    
+```sql
+-- total SavedValue / SavedValueEntry
+SELECT
+  * 
+FROM
+  (
+    {{ 
+    SELECT
+      'SavedValues' AS "type",
+      COUNT({s:pk}) AS "total" 
+    FROM
+      {savedvalues AS s} }} 
+    UNION ALL
+    {{ 
+    SELECT
+      'SavedValueEntry' AS "type",
+      COUNT({e:pk}) AS "total" 
+    FROM
+      {savedvalueentry AS e} }} 
+  )
+  summary
+
+-- SavedValues per item
+SELECT
+  {s:modifiedItem} AS "item",
+  COUNT({s:pk}) AS "total",
+  MIN({s:modifiedtime}) AS "oldest",
+  MAX({s:modifiedtime}) AS "newest" 
+FROM
+  {SavedValues AS s } 
+GROUP BY
+  {s:modifiedItem} 
+ORDER BY
+  "total" DESC
+
+-- orphaned SavedValueEntry - there shouldn't be any
+SELECT
+  COUNT({e:pk}) AS "total",
+  MIN({e:modifiedtime}) AS "oldest",
+  MAX({e:modifiedtime}) AS "newest" 
+FROM
+  {SavedValueEntry AS e 
+  LEFT JOIN
+    SavedValues AS s 
+    ON {e:parent} = {s:pk} } 
+WHERE
+  {s:pk} IS NULL
+```
+
+</td><td>
+
+A lot of those items accumulated over the project lifetime.
+If possible, disable storing saved values. (`hmc.storing.modifiedvalues.size=0`)
+
+</td></tr>
 <tr><td>SolrIndexOperation</td><td>
     
 ```sql

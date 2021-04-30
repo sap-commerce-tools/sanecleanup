@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import re
 import os
-from os.path import join
+import re
 import urllib.request
+from os.path import join
 from urllib.parse import urlencode
+
 
 def prettySQL(raw):
     # return raw
@@ -14,9 +15,9 @@ def prettySQL(raw):
     #  -d 'indentation=TWO_SPACES' \
     #  -d 'sqlString=select count(*) from foo'
     params = urlencode({'forceInNewWindow': 'true',
-                       'sqlKeywordsCase': 'UPPER_CASE',
-                       'indentation': 'TWO_SPACES',
-                       'sqlString': raw})
+                        'sqlKeywordsCase': 'UPPER_CASE',
+                        'indentation': 'TWO_SPACES',
+                        'sqlString': raw})
     data = params.encode('utf-8')
     with urllib.request.urlopen("https://www.freeformatter.com/sql-formatter.html", data) as f:
         return f.read().decode('utf-8')
@@ -43,7 +44,7 @@ for impex in impexes:
             query = ""
             for l in [l.rstrip() for l in lines[1:-1]]:
                 l = re.sub("^# ?", "", l)
-                if l.lower().strip().startswith('select'):
+                if l.lower().strip().startswith('select') or l.lower().strip().startswith('--'):
                     query += l + '\n'
                     continue
                 if len(query) > 0:
@@ -88,7 +89,3 @@ with open('README.md', 'r') as old:
 if newContent:
     with open('README.md', 'w') as new:
         new.write(newContent)
-
-
-
-

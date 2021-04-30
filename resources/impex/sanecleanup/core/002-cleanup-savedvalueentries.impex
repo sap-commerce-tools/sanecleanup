@@ -1,0 +1,59 @@
+# delete all stored sessions one day after there last update
+
+# Import config properties into impex macros
+UPDATE GenericItem[processor = de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor]; pk[unique = true]
+$sessionLanguage = $config-sanecleanup.jobs.sessionlanguage
+
+# @readme SavedValues, SavedValueEntry
+# A lot of those items accumulated over the project lifetime.
+# If possible, disable storing saved values. (`hmc.storing.modifiedvalues.size=0`)
+# -- total SavedValue / SavedValueEntry
+# SELECT
+#   *
+# FROM
+#   (
+#     {{
+#     SELECT
+#       'SavedValues' AS "type",
+#       COUNT({s:pk}) AS "total"
+#     FROM
+#       {savedvalues AS s} }}
+#     UNION ALL
+#     {{
+#     SELECT
+#       'SavedValueEntry' AS "type",
+#       COUNT({e:pk}) AS "total"
+#     FROM
+#       {savedvalueentry AS e} }}
+#   )
+#   summary
+# -- SavedValues per item
+# SELECT
+#   {s:modifiedItem} AS "item",
+#   COUNT({s:pk}) AS "total",
+#   MIN({s:modifiedtime}) AS "oldest",
+#   MAX({s:modifiedtime}) AS "newest"
+# FROM
+#   {SavedValues AS s }
+# GROUP BY
+#   {s:modifiedItem}
+# ORDER BY
+#   "total" DESC
+# -- orphaned SavedValueEntry - there shouldn't be any
+# SELECT
+#    COUNT({e:pk}) AS "total",
+#    MIN({e:modifiedtime}) AS "oldest",
+#    MAX({e:modifiedtime}) AS "newest"
+# FROM {SavedValueEntry as e LEFT JOIN SavedValues AS s ON {e:parent} = {s:pk} }
+# WHERE {s:pk} IS NULL
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]   ; searchQuery; retentionTimeSeconds; actionReference          ;
+; savedValueEntryRule ; "select {e:pk}, {e:itemtype}
+   from {SavedValueEntry as e LEFT JOIN SavedValues AS s ON {e:parent} = {s:pk} }
+   where {s:pk} IS NULL"                     ; 0             ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]         ; retentionRule(code)   ; batchSize
+; savedValueEntryCleanupJob ; savedValueEntryRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]             ; job(code)                   ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; savedValueEntryCleanupCronJob ; savedValueEntryCleanupJob ;
+INSERT Trigger; cronJob(code)[unique = true]    ; cronExpression
+# at midnight
+; savedValueEntryCleanupCronJob ; 0 0 0 * * ?

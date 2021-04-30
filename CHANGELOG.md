@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2021-04-30
+
+### Added
+
+- Cleanup `SavedValueEntries`
+
 ## [3.0.0] - 2021-04-30
 
 ### Added
@@ -93,7 +99,8 @@ Initial release
   - Carts
 
 
-[Unreleased]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/sap-commerce-tools/sanecleanup/compare/v1.0.0...v1.0.1
