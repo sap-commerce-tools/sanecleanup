@@ -1,0 +1,77 @@
+# Import config properties into impex macros
+UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
+$sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
+
+# @readme ProcessTaskLog
+# We recommend customer to  BusinessProcess cleanup, which will eventually take care of TaskLogs cleanup. There might be the few scenarios for ProcessTaskLog cleanUp
+#1. The customer wants to keep the  BusinessProcess for reporting, although we don't recommend it.
+#1. The customer might be using the custom task without any business process.
+#
+# -- Queries is adjusted based MSSQL
+# -- further adjustment required for other Database Type
+# SELECT
+#   COUNT({pk})
+# FROM
+#   {ProcessTaskLog}
+# WHERE
+#   {creationTime} < DATEADD(
+#     month,
+#     -2,
+#     SYSDATETIME()
+#   )
+#
+
+INSERT_UPDATE Script; code[unique=true]; description[default = $sessionLanguage]; content; active[default=true]
+;directCleanupProcessTaskLogScript;"Delete ProcessTaskLog" ;"
+import de.hybris.platform.servicelayer.search.FlexibleSearchQuery;
+import de.hybris.platform.util.persistence.PersistenceUtils;
+fss = spring.getBean('flexibleSearchService')
+ms = spring.getBean('modelService')
+
+PersistenceUtils.doWithSLDPersistence({ ->
+// -3 3 Month ADJUST
+    processTaskLogQuery = new FlexibleSearchQuery(/SELECT {pk} FROM {ProcessTaskLog} WHERE {creationTime} < DATEADD(month, -3, SYSDATETIME() ) /);
+    processTaskLogQuery.setCount(10000); // ADJUST TOTAL COUNT
+    processTaskLogCounts = fss.search(processTaskLogQuery).result
+// out.println('ProcessTaskLog count: ' + processTaskLogCounts.size())
+if (processTaskLogCounts.size() > 0) {
+    // out.println('Deleting ProcessTaskLog: ' + processTaskLogCounts.size())
+    try { // try bulk remove
+        ms.removeAll(processTaskLogCounts)
+        counter = processTaskLogCounts.size()
+
+    } catch (Exception bulkEx) { // if exception do individual remove
+        // out.println('Exception: ' + bulkEx.getMessage())
+        counter = 0
+        for (processTaskLogCount in processTaskLogCounts) {
+            try{
+                ms.remove(processTaskLogCount)
+                counter++
+                // out.println(counter + ' | Deleted - ProcessTaskLog: ' + processTaskLogCount?.pk + ' - ' + processTaskLogCount?.actionId + ' - ' + processTaskLogCount?.process)
+            } catch (Exception indEx) {
+                // out.println('Exception: ' + indEx.getMessage())
+            }
+        }
+    }
+    // out.println('Deleted ProcessTaskLog: ' + counter)
+    // processTaskLogQuery.setCount(-1);
+    // processTaskLogCounts = fss.search(processTaskLogQuery).result
+    // return [deleted: counter, remaining: processTaskLogCounts.size()]
+    return [deleted: counter]
+
+} else {
+    // out.println('NO ProcessTaskLog to delete.')
+    return [deleted: 0, remaining: 0]
+}
+});
+";
+
+INSERT_UPDATE ScriptingJob;code[unique = true];scriptURI
+;directCleanupProcessTaskLogScriptJob;"model://directCleanupProcessTaskLogScript"
+
+INSERT_UPDATE CronJob;code[unique=true]; job(code); sessionLanguage(isoCode)[default = $sessionLanguage];
+;directCleanupProcessTaskLogCronjob;directCleanupProcessTaskLogScriptJob ;
+
+# runs every 40 mins ADJUST
+INSERT_UPDATE Trigger; cronjob(code)[unique = true]; cronExpression; active
+;directCleanupProcessTaskLogCronjob ;0 0/40 * ? * * * ;true
