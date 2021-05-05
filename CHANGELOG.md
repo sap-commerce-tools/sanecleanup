@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.0.2] - 2021-05-05
-
 ### Added
 
 - Cleanup `ProcessTaskLog`
@@ -105,8 +103,7 @@ Initial release
   - Carts
 
 
-[Unreleased]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.2.0...HEAD
-[3.2.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.1.0...v3.2.0
+[Unreleased]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.1.0...HEAD
 [3.1.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v1.0.1...v2.0.0
