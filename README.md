@@ -435,6 +435,22 @@ Is there an excessive amount of "premature events"? Or very old (older than a a 
 https://help.sap.com/viewer/d0224eca81e249cb821f2cdf45a82ace/2011/en-US/7e8ff9d7653f43e8890bc8eb395d52a7.html
 
 </td></tr>
+<tr><td>ProcessTaskLog</td><td>
+
+```sql
+-- Queries is adjusted based MSSQL 
+-- further adjustment required for other Database Type
+SELECT COUNT({pk}) FROM {ProcessTaskLog} 
+WHERE {creationTime} < DATEADD(month, -2, SYSDATETIME() ) 
+```
+
+</td><td>
+
+We recommend customer to  BusinessProcess cleanup, which will eventually take care of TaskLogs cleanup. There might be the few scenarios for ProcessTaskLog cleanUp
+1. The customer wants to keep the  BusinessProcess for reporting, although we don't recommend it.
+1. The customer might be using the custom task without any business process.
+
+</td></tr>
 </table>
 <!-- @queries-end -->
 
