@@ -8,7 +8,7 @@ $twoWeeks = 1209600
 # - Are there more than a handful sent/unsent messages?
 # - Are there messages that do not belong to any process?
 # SELECT
-#   {bp:processDefinitionName} AS "source process",
+#   {bp:processDefinitionName} AS "source",
 #   {m:sent},
 #   COUNT({m:pk}) AS "total",
 #   MIN({m:modifiedtime}) AS "oldest",

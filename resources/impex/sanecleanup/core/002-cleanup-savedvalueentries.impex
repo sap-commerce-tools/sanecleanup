@@ -39,7 +39,8 @@ $sessionLanguage = $config-sanecleanup.jobs.sessionlanguage
 #   {s:modifiedItem}
 # ORDER BY
 #   "total" DESC
-# -- orphaned SavedValueEntry - there shouldn't be any
+# -- orphaned SavedValueEntry
+# -- (there shouldn't be any)
 # SELECT
 #    COUNT({e:pk}) AS "total",
 #    MIN({e:modifiedtime}) AS "oldest",

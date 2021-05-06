@@ -104,9 +104,9 @@ SELECT
     ELSE
       'saved' 
   END
-  AS "cart type", 
+  AS "cart type",
   COUNT({c:pk}) AS "total", 
-  MIN({c:modifiedtime}) AS "oldest", 
+  MIN({c:modifiedtime}) AS "oldest",
   MAX({c:modifiedtime}) AS "newest" 
 FROM
   { Cart AS c 
@@ -203,7 +203,7 @@ This cleanup is enabled by default in recent SAP Commerce patch releases, so thi
     
 ```sql
 SELECT
-  {bp:processDefinitionName} AS "source process",
+  {bp:processDefinitionName} AS "source",
   {m:sent},
   COUNT({m:pk}) AS "total",
   MIN({m:modifiedtime}) AS "oldest",
@@ -261,7 +261,8 @@ FROM
 WHERE
   (
     {i:code} LIKE '0_______' 
-    OR {i:code} LIKE 'generated impex media - %' 
+    OR {i:code} LIKE 
+      'generated impex media - %' 
   )
 ```
 
@@ -316,6 +317,34 @@ Are there are cronjob with more than ~10 logs and/or logs older than 14 days?
 (those are default values for log file retention)
 
 </td></tr>
+<tr><td>ProcessTaskLog</td><td>
+    
+```sql
+-- Query tested with MS SQL
+-- Adjust the date calculation for 
+-- other databases
+SELECT
+    COUNT({l:pk}) AS "total",
+    MIN({l:modifiedtime}) AS "oldest",
+    MAX({l:modifiedtime}) AS "newest"
+FROM
+  {ProcessTaskLog AS l} 
+WHERE
+  {l:creationTime} < DATEADD( 
+    MONTH, 
+    -2, 
+    GETUTCDATE() 
+  )
+```
+
+</td><td>
+
+We recommend customer to  BusinessProcess cleanup, which will eventually take care of TaskLogs cleanup.
+There might be the few scenarios for ProcessTaskLog cleanup:
+1. The customer wants to keep the  BusinessProcess for reporting, although we don't recommend it.
+1. The customer might be using the custom task without any business process.
+
+</td></tr>
 <tr><td>SavedValues,SavedValueEntry</td><td>
     
 ```sql
@@ -353,7 +382,8 @@ GROUP BY
 ORDER BY
   "total" DESC
 
--- orphaned SavedValueEntry - there shouldn't be any
+-- orphaned SavedValueEntry
+-- (there shouldn't be any)
 SELECT
   COUNT({e:pk}) AS "total",
   MIN({e:modifiedtime}) AS "oldest",

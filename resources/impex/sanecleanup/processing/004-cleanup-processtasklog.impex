@@ -3,66 +3,79 @@ UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.Conf
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
 
 # @readme ProcessTaskLog
-# We recommend customer to  BusinessProcess cleanup, which will eventually take care of TaskLogs cleanup. There might be the few scenarios for ProcessTaskLog cleanUp
-#1. The customer wants to keep the  BusinessProcess for reporting, although we don't recommend it.
-#1. The customer might be using the custom task without any business process.
-#
-# -- Queries is adjusted based MSSQL
-# -- further adjustment required for other Database Type
+# We recommend customer to  BusinessProcess cleanup, which will eventually take care of TaskLogs cleanup.
+# There might be the few scenarios for ProcessTaskLog cleanup:
+# 1. The customer wants to keep the  BusinessProcess for reporting, although we don't recommend it.
+# 1. The customer might be using the custom task without any business process.
+# -- Query tested with MS SQL
+# -- Adjust the date calculation for
+# -- other database types
 # SELECT
-#   COUNT({pk})
+#   COUNT({l:pk}) AS "total",
+#   MIN({l:modifiedtime}) AS "oldest",
+#   MAX({l:modifiedtime}) AS "newest"
 # FROM
-#   {ProcessTaskLog}
+#   {ProcessTaskLog AS l}
 # WHERE
-#   {creationTime} < DATEADD(
+#   {l:creationTime} < DATEADD(
 #     month,
 #     -2,
-#     SYSDATETIME()
+#     GETUTCDATE()
 #   )
-#
-
 INSERT_UPDATE Script; code[unique=true]; description[default = $sessionLanguage]; content; active[default=true]
 ;directCleanupProcessTaskLogScript;"Delete ProcessTaskLog" ;"
-import de.hybris.platform.servicelayer.search.FlexibleSearchQuery;
-import de.hybris.platform.util.persistence.PersistenceUtils;
-fss = spring.getBean('flexibleSearchService')
-ms = spring.getBean('modelService')
+import de.hybris.platform.servicelayer.search.FlexibleSearchQuery
+import de.hybris.platform.util.persistence.PersistenceUtils
+
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+
+def fss = spring.getBean('flexibleSearchService')
+def ms = spring.getBean('modelService')
 
 PersistenceUtils.doWithSLDPersistence({ ->
-// -3 3 Month ADJUST
-    processTaskLogQuery = new FlexibleSearchQuery(/SELECT {pk} FROM {ProcessTaskLog} WHERE {creationTime} < DATEADD(month, -3, SYSDATETIME() ) /);
-    processTaskLogQuery.setCount(10000); // ADJUST TOTAL COUNT
-    processTaskLogCounts = fss.search(processTaskLogQuery).result
-// out.println('ProcessTaskLog count: ' + processTaskLogCounts.size())
-if (processTaskLogCounts.size() > 0) {
-    // out.println('Deleting ProcessTaskLog: ' + processTaskLogCounts.size())
-    try { // try bulk remove
-        ms.removeAll(processTaskLogCounts)
-        counter = processTaskLogCounts.size()
+// TODO: adjust retention period
+    def retention = Date.from(Instant.now().atZone(ZoneId.systemDefault()).minus(3, ChronoUnit.MONTHS).toInstant())
+    def processTaskLogQuery = new FlexibleSearchQuery('SELECT {pk} FROM {ProcessTaskLog} WHERE {creationTime} < ?CALC_RETENTION_TIME');
+    processTaskLogQuery.addQueryParameter('CALC_RETENTION_TIME', retention)
+    processTaskLogQuery.setCount(10000); // TODO: adjust total count
+    def processTaskLogs = fss.search(processTaskLogQuery).result
+// out.println('ProcessTaskLog count: ' + processTaskLogs.size())
+    if (processTaskLogs.size() > 0) {
+        // out.println('Deleting ProcessTaskLog: ' + processTaskLogs.size())
+        def counter
+        try { // try bulk remove
+            ms.removeAll(processTaskLogs)
+            counter = processTaskLogs.size()
+            processTaskLogs.each {
+                ms.detach(it)
+            }
 
-    } catch (Exception bulkEx) { // if exception do individual remove
-        // out.println('Exception: ' + bulkEx.getMessage())
-        counter = 0
-        for (processTaskLogCount in processTaskLogCounts) {
-            try{
-                ms.remove(processTaskLogCount)
-                counter++
-                // out.println(counter + ' | Deleted - ProcessTaskLog: ' + processTaskLogCount?.pk + ' - ' + processTaskLogCount?.actionId + ' - ' + processTaskLogCount?.process)
-            } catch (Exception indEx) {
-                // out.println('Exception: ' + indEx.getMessage())
+        } catch (Exception bulkEx) { // if exception do individual remove
+            // out.println('Exception: ' + bulkEx.getMessage())
+            counter = 0
+            for (taskLog in processTaskLogs) {
+                try {
+                    ms.remove(taskLog)
+                    ms.detach(taskLog)
+                    counter++
+                    // out.println(counter + ' | Deleted - ProcessTaskLog: ' + taskLog?.pk + ' - ' + taskLog?.actionId + ' - ' + taskLog?.process)
+                } catch (Exception indEx) {
+                    // out.println('Exception: ' + indEx.getMessage())
+                }
             }
         }
-    }
-    // out.println('Deleted ProcessTaskLog: ' + counter)
-    // processTaskLogQuery.setCount(-1);
-    // processTaskLogCounts = fss.search(processTaskLogQuery).result
-    // return [deleted: counter, remaining: processTaskLogCounts.size()]
-    return [deleted: counter]
+        // out.println('Deleted ProcessTaskLog: ' + counter)
+        // processTaskLogQuery.setCount(-1);
+        // processTaskLogs = fss.search(processTaskLogQuery).result
+        // return [deleted: counter, remaining: processTaskLogs.size()]
+        return [deleted: counter]
 
-} else {
-    // out.println('NO ProcessTaskLog to delete.')
-    return [deleted: 0, remaining: 0]
-}
+    } else {
+        // out.println('NO ProcessTaskLog to delete.')
+        return [deleted: 0, remaining: 0]
+    }
 });
 ";
 
@@ -72,6 +85,6 @@ INSERT_UPDATE ScriptingJob;code[unique = true];scriptURI
 INSERT_UPDATE CronJob;code[unique=true]; job(code); sessionLanguage(isoCode)[default = $sessionLanguage];
 ;directCleanupProcessTaskLogCronjob;directCleanupProcessTaskLogScriptJob ;
 
-# runs every 40 mins ADJUST
-INSERT_UPDATE Trigger; cronjob(code)[unique = true]; cronExpression; active
+# every 40 minutes
+INSERT Trigger; cronjob(code)[unique = true]; cronExpression; active
 ;directCleanupProcessTaskLogCronjob ;0 0/40 * ? * * * ;true
