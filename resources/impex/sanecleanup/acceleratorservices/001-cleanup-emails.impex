@@ -1,8 +1,7 @@
 # Import config properties into impex macros
 UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
-
-$twoWeeks = 1209600
+$retentionTime = $config-sanecleanup.retentiontimeseconds.emailmessage
 
 # @readme EmailMessage
 # - Are there more than a handful sent/unsent messages?
@@ -27,19 +26,16 @@ INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; ret
   SELECT {m:pk}, {m:itemtype}
     FROM {EmailMessage AS m LEFT JOIN BusinessProcess AS bp ON {m:process} = {bp:pk}}
    WHERE {bp:pk} IS NULL
-     AND {m:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $twoWeeks           ; basicRemoveCleanupAction ;
+     AND {m:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $retentionTime           ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
 ; emailMessageCleanupJob ; emailMessageRule     ; 1000
 INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; emailMessageCleanupCronJob ; emailMessageCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]; cronExpression
-# every day at 02:00
-; emailMessageCleanupCronJob    ; 0 0 2 * * ?
 
 
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; retentionTimeSeconds; actionReference          ;
 ; emailAddressRule     ; "
-SELECT DISTINCT({a:pk}), {a:itemType} from {
+SELECT DISTINCT {a:pk}, {a:itemType} from {
 EmailAddress AS a
 LEFT JOIN EmailMessage2ToAddressesRel AS to ON {to:target} = {a:pk}
 LEFT JOIN EmailMessage2CcAddressesRel AS cc ON {cc:target} = {a:pk}
@@ -54,9 +50,7 @@ INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSiz
 ; emailAddressCleanupJob ; emailAddressRule     ; 1000
 INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; emailAddressCleanupCronJob ; emailAddressCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]; cronExpression
-# every day at 02:00
-; emailAddressCleanupCronJob    ; 0 0 2 * * ?
+
 
 
 # EmailAttachment
@@ -71,9 +65,24 @@ INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSiz
 ; emailAttachmentCleanupJob ; emailAttachmentRule     ; 1000
 INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; emailAttachmentCleanupCronJob ; emailAttachmentCleanupJob ;
+
+
+###
+
+INSERT_UPDATE CompositeCronJob;code[unique=true];job(code);sessionLanguage(isoCode)[default = $sessionLanguage]
+;emailRetentionCompositeCronJob;compositeJobPerformable;
 INSERT Trigger; cronJob(code)[unique = true]; cronExpression
 # every day at 02:00
-; emailAttachmentCleanupCronJob    ; 0 0 2 * * ?
+; emailRetentionCompositeCronJob    ; 0 0 2 * * ?
 
+INSERT_UPDATE CompositeEntry;code[unique=true];executableCronJob(code);compositeCronJob(code)[default='emailRetentionCompositeCronJob']
+;emailMessageCleanupCronJobEntry;emailMessageCleanupCronJob;
+;emailAddressCleanupJobEntry;emailAddressCleanupCronJob;
+;emailAttachmentCleanupCronJobEntry;emailAttachmentCleanupCronJob;
 
-
+# ensure correct order of execution
+UPDATE CompositeCronJob;code[unique=true];compositeEntries(code)
+;emailRetentionCompositeCronJob;"emailMessageCleanupCronJobEntry,
+emailAddressCleanupJobEntry,
+emailAttachmentCleanupCronJobEntry
+"

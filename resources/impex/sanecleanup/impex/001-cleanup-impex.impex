@@ -1,8 +1,7 @@
 # Import config properties into impex macros
 UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
-
-$twoWeeks = 1209600
+$retentionTime = $config-sanecleanup.retentiontimeseconds.impexmedia.generated
 
 # @readme ImpexMedia
 # Are there more than a handful (>100) of generated impex medias?
@@ -20,7 +19,7 @@ INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; ret
   SELECT {i:pk}, {i:itemtype}
     FROM {ImpexMedia AS i}
    WHERE ( {i:code} LIKE '0_______' OR {i:code} LIKE 'generated impex media - %' )
-     AND {i:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $twoWeeks           ; basicRemoveCleanupAction ;
+     AND {i:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $retentionTime           ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
                    ; impexMediaCleanupJob ; impexMediaRule     ; 1000
 INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]

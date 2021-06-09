@@ -40,4 +40,4 @@ INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; session
 ; orphanedLogsCleanupCronJob ; orphanedLogsCleanupJob ;
 INSERT Trigger; cronJob(code)[unique = true]; cronExpression
 # every day at midnight
-; impexMediaCleanupCronJob    ; 0 0 0 * * ?
+; orphanedLogsCleanupCronJob    ; 0 0 0 * * ?

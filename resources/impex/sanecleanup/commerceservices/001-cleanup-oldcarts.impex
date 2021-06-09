@@ -7,9 +7,8 @@
 # Import config properties into impex macros
 UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
-
-$twoWeeks = 1209600
-$fourWeeks = 2419200
+$retentionTimeRegular=$config-sanecleanup.retentiontimeseconds.cart.regular
+$retentionTimeAnonymous =$config-sanecleanup.retentiontimeseconds.cart.anonymous
 
 # @readme Cart
 # - Are there excessive amount of carts per site or per user?
@@ -56,13 +55,13 @@ INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; ret
     FROM { Cart AS c LEFT JOIN User AS u ON {c:user} = {u:pk} }
    WHERE {c:saveTime} IS NULL
      AND {u:uid} <> 'anonymous'
-     AND {c:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $fourWeeks          ; basicRemoveCleanupAction ;
+     AND {c:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $retentionTimeRegular          ; basicRemoveCleanupAction ;
                                   ; anonymousCartRule  ; "
   SELECT {c:pk}, {c:itemtype}
     FROM {Cart AS c LEFT JOIN User AS u ON {c:user} = {u:pk}}
    WHERE {c:saveTime} IS NULL
      AND ( {u:uid} = 'anonymous' OR {u:uid} IS NULL )
-     AND {c:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $twoWeeks           ; basicRemoveCleanupAction ;
+     AND {c:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $retentionTimeAnonymous           ; basicRemoveCleanupAction ;
 
 INSERT_UPDATE RetentionJob; code[unique = true]     ; retentionRule(code); batchSize
                    ; cartCleanupJob          ; cartRule           ; 1000
@@ -70,7 +69,15 @@ INSERT_UPDATE RetentionJob; code[unique = true]     ; retentionRule(code); batch
 INSERT_UPDATE CronJob; code[unique = true]         ; job(code)               ; sessionLanguage(isoCode)[default = $sessionLanguage]
               ; cartCleanupCronJob          ; cartCleanupJob          ;
               ; anonymousCartCleanupCronJob ; anonymousCartCleanupJob ;
+
+###
+
+INSERT_UPDATE CompositeCronJob;code[unique=true];job(code);sessionLanguage(isoCode)[default = $sessionLanguage]
+;cartCleanupCompositeCronJob;compositeJobPerformable;
 INSERT Trigger; cronJob(code)[unique = true]; cronExpression
 # every day at 03:00
-              ; cartCleanupCronJob          ; 0 0 3 * * ?
-              ; anonymousCartCleanupCronJob ; 0 0 3 * * ?
+; cartCleanupCompositeCronJob    ; 0 0 3 * * ?
+
+INSERT_UPDATE CompositeEntry;code[unique=true];executableCronJob(code);compositeCronJob(code)[default='cartCleanupCompositeCronJob']
+;cartCleanupCronJobEntry;cartCleanupCronJob;
+;anonymousCartCleanupCronJobEntry;anonymousCartCleanupCronJob;

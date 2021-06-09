@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 TBD
 
+## [3.3.0] - 2021-06-09
+
+### Added
+
+- Retention periods are now configurable via properties 
+  (check `project.properties` for details)
+
+### Changed
+
+- Retention rules and cron jobs that depend on each other are now grouped and 
+  executed in the correct order via composite cronjobs
+  
+### Upgrade Guide
+
+Remove all triggers of cronjobs that are now part of a composite job
+
+```impex
+REMOVE Trigger; cronJob(code)[unique = true]
+; emailMessageCleanupCronJob
+; emailAddressCleanupCronJob
+; emailAttachmentCleanupCronJob
+; cartCleanupCronJob
+; anonymousCartCleanupCronJob
+; distributedImpexCronJobCleanupCronJob
+; distributedImpexJobCleanupCronJob
+; distributedImportProcessCleanupCronJob
+; importBatchCleanupCronJob
+; importBatchContentCleanupCronJob
+; businessProcessCleanupCronJob
+; failedBusinessProcessCleanupCronJob
+; progressBusinessProcessCleanupCronJob
+; orphanedTaskConditionCleanupCronJob
+; orphanedProcessTaskCleanupCronJob
+; orphanedBusinessProcessParameterCleanupCronJob
+; orphanedProcessTaskLogCleanupCronJob
+```
+
+
 ## [3.2.0] - 2021-05-06
 
 ### Added
@@ -109,7 +147,8 @@ Initial release
   - Carts
 
 
-[Unreleased]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.3.0...HEAD
+[3.3.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.1.0...v.3.2.0
 [3.1.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v2.0.0...v3.0.0

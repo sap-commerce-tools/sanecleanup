@@ -1,4 +1,8 @@
-$twoDays = 172800
+
+# Import config properties into impex macros
+UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
+$sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
+$retentionTime=$config-sanecleanup.retentiontimeseconds.solrindexoperation
 
 # @readme SolrIndexOperation
 # Too many solr operations (more than ~100 per index)?
@@ -16,7 +20,7 @@ INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; ret
   SELECT {o:pk}, {o:itemtype}
     FROM {SolrIndexOperation AS o}
    WHERE {o:endTime} IS NOT NULL
-     AND {o:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $twoDays           ; basicRemoveCleanupAction ;
+     AND {o:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $retentionTime ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
 ; solrIndexOperationCleanupJob ; solrIndexOperationRule     ; 1000
 INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = en]

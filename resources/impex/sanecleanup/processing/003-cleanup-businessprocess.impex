@@ -1,9 +1,11 @@
 # Import config properties into impex macros
 UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage
+$retentionTimeProcessSuccess=$config-sanecleanup.retentiontimeseconds.businessprocess.succeeded
+$retentionTimeProcessFailed=$config-sanecleanup.retentiontimeseconds.businessprocess.failed
+$retentionTimeProcessRunning=$config-sanecleanup.retentiontimeseconds.businessprocess.running
+$retentionTimeTaskConditionPremature=$config-sanecleanup.retentiontimeseconds.taskcondition.premature
 
-$fourWeeks = 2419200
-$sixMonths = 15778476
 
 # @readme BusinessProcess
 # Are there too many (let's say > 1000) or very old BusinessProcess in your system?
@@ -23,65 +25,33 @@ INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; re
   SELECT {p:pk}, {p:itemtype}
     FROM {BusinessProcess AS p JOIN ProcessState AS s ON {p:state} = {s:pk} }
    WHERE {s:code} IN ('SUCCEEDED')
-     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $fourWeeks           ; basicRemoveCleanupAction ;
+     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $retentionTimeProcessSuccess           ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
                    ; businessProcessCleanupJob ; businessProcessRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
               ; businessProcessCleanupCronJob ; businessProcessCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
-# every day at midnight
-              ; businessProcessCleanupCronJob ; 0 0 0 * * ?
 
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
 ; failedBusinessProcessRule ; "
   SELECT {p:pk}, {p:itemtype}
     FROM {BusinessProcess AS p JOIN ProcessState AS s ON {p:state} = {s:pk} }
    WHERE {s:code} IN ('FAILED', 'ERROR')
-     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $sixMonths           ; basicRemoveCleanupAction ;
+     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $retentionTimeProcessFailed           ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
 ; failedBusinessProcessCleanupJob ; failedBusinessProcessRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; failedBusinessProcessCleanupCronJob ; failedBusinessProcessCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
-# every day at midnight
-; failedBusinessProcessCleanupCronJob ; 0 0 0 * * ?
 
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
 ; progressBusinessProcessRule ; "
   SELECT {p:pk}, {p:itemtype}
     FROM {BusinessProcess AS p JOIN ProcessState AS s ON {p:state} = {s:pk} }
    WHERE {s:code} IN ('CREATED', 'RUNNING', 'WAITING')
-     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $sixMonths           ; basicRemoveCleanupAction ;
+     AND {p:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $retentionTimeProcessRunning           ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
 ; progressBusinessProcessCleanupJob ; progressBusinessProcessRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; progressBusinessProcessCleanupCronJob ; progressBusinessProcessCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
-# every day at midnight
-; progressBusinessProcessCleanupCronJob ; 0 0 0 * * ?
-
-# @readme TaskCondition
-# Is there an excessive amount of "premature events"? Or very old (older than a a few weeks) events?
-#
-# https://help.sap.com/viewer/d0224eca81e249cb821f2cdf45a82ace/2011/en-US/7e8ff9d7653f43e8890bc8eb395d52a7.html
-# SELECT COUNT({tc:pk}),
-#   MIN({tc:modifiedtime}) AS "oldest",
-#   MAX({tc:modifiedtime}) AS "newest"
-#   FROM {TaskCondition AS tc }
-#  WHERE {tc:task} IS NULL
-INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
-; prematureTaskConditionRule ; "
-  SELECT {tc:pk}, {tc:itemtype}
-    FROM {TaskCondition AS tc }
-   WHERE {tc:task} IS NULL
-     AND {tc:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $fourWeeks ; basicRemoveCleanupAction ;
-INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
-; prematureTaskConditionCleanupJob ; prematureTaskConditionRule ; 1000
-INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
-; prematureTaskConditionCleanupCronJob ; prematureTaskConditionCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
-# every day at 02:00
-; prematureTaskConditionCleanupCronJob ; 0 0 2 * * ?
 
 #### delete orphans if BusinessProcess / Task is gone. this shouldn't happen, but you never know
 
@@ -96,9 +66,6 @@ INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; ba
 ; orphanedTaskConditionCleanupJob ; orphanedTaskConditionRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; orphanedTaskConditionCleanupCronJob ; orphanedTaskConditionCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
-# every day at 02:00
-; orphanedTaskConditionCleanupCronJob ; 0 0 2 * * ?
 
 # ProcessTask
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
@@ -114,9 +81,6 @@ INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; ba
 ; orphanedProcessTaskCleanupJob ; orphanedProcessTaskRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; orphanedProcessTaskCleanupCronJob ; orphanedProcessTaskCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
-# every day at 02:00
-; orphanedProcessTaskCleanupCronJob ; 0 0 2 * * ?
 
 # BusinessProcessParameter
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
@@ -132,9 +96,6 @@ INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; ba
 ; orphanedBusinessProcessParameterCleanupJob ; orphanedBusinessProcessParameterRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; orphanedBusinessProcessParameterCleanupCronJob ; orphanedBusinessProcessParameterCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
-# every day at 02:00
-; orphanedBusinessProcessParameterCleanupCronJob ; 0 0 2 * * ?
 
 # ProcessTaskLog
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
@@ -150,6 +111,53 @@ INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; ba
 ; orphanedProcessTaskLogCleanupJob ; orphanedProcessTaskLogRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; orphanedProcessTaskLogCleanupCronJob ; orphanedProcessTaskLogCleanupJob ;
+
+###
+
+INSERT_UPDATE CompositeCronJob;code[unique=true];job(code);sessionLanguage(isoCode)[default = $sessionLanguage]
+;businessProcessRetentionCompositeCronJob;compositeJobPerformable;
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
+# every day at midnight
+; businessProcessRetentionCompositeCronJob    ; 0 0 0 * * ?
+
+INSERT_UPDATE CompositeEntry;code[unique=true];executableCronJob(code);compositeCronJob(code)[default='businessProcessRetentionCompositeCronJob']
+;businessProcessCleanupCronJobEntry;businessProcessCleanupCronJob;
+;failedBusinessProcessCleanupCronJobEntry;failedBusinessProcessCleanupCronJob;
+;progressBusinessProcessCleanupCronJobEntry;progressBusinessProcessCleanupCronJob;
+;orphanedTaskConditionCleanupCronJobEntry;orphanedTaskConditionCleanupCronJob;
+;orphanedProcessTaskCleanupCronJobEntry;orphanedProcessTaskCleanupCronJob;
+;orphanedBusinessProcessParameterCleanupCronJobEntry;orphanedBusinessProcessParameterCleanupCronJob;
+;orphanedProcessTaskLogCleanupCronJobEntry;orphanedProcessTaskLogCleanupCronJob;
+
+#
+UPDATE CompositeCronJob;code[unique=true];compositeEntries(code)
+;businessProcessRetentionCompositeCronJob;"businessProcessCleanupCronJobEntry,
+failedBusinessProcessCleanupCronJobEntry,
+progressBusinessProcessCleanupCronJobEntry,
+orphanedTaskConditionCleanupCronJobEntry,
+orphanedProcessTaskCleanupCronJobEntry,
+orphanedBusinessProcessParameterCleanupCronJobEntry,
+orphanedProcessTaskLogCleanupCronJobEntry"
+
+# @readme TaskCondition
+# Is there an excessive amount of "premature events"? Or very old (older than a a few weeks) events?
+#
+# https://help.sap.com/viewer/d0224eca81e249cb821f2cdf45a82ace/2011/en-US/7e8ff9d7653f43e8890bc8eb395d52a7.html
+# SELECT COUNT({tc:pk}),
+#   MIN({tc:modifiedtime}) AS "oldest",
+#   MAX({tc:modifiedtime}) AS "newest"
+#   FROM {TaskCondition AS tc }
+#  WHERE {tc:task} IS NULL
+INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true] ; searchQuery; retentionTimeSeconds; actionReference          ;
+; prematureTaskConditionRule ; "
+  SELECT {tc:pk}, {tc:itemtype}
+    FROM {TaskCondition AS tc }
+   WHERE {tc:task} IS NULL
+     AND {tc:modifiedTime} < ?CALC_RETIREMENT_TIME"                         ; $retentionTimeTaskConditionPremature ; basicRemoveCleanupAction ;
+INSERT_UPDATE RetentionJob; code[unique = true]       ; retentionRule(code) ; batchSize
+; prematureTaskConditionCleanupJob ; prematureTaskConditionRule ; 1000
+INSERT_UPDATE CronJob; code[unique = true]           ; job(code)                 ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; prematureTaskConditionCleanupCronJob ; prematureTaskConditionCleanupJob ;
 INSERT Trigger; cronJob(code)[unique = true]  ; cronExpression
 # every day at 02:00
-; orphanedProcessTaskLogCleanupCronJob ; 0 0 2 * * ?
+; prematureTaskConditionCleanupCronJob ; 0 0 2 * * ?

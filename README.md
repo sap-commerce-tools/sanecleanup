@@ -14,7 +14,8 @@ Sensible defaults for data retention and cleanup for SAP Commerce, based on my C
     ````xml
    <extension name="sanecleanup" />
     ````
-1. :red_circle: Adapt the retention rules to your project requirements :red_circle:
+1. :red_circle: Adapt the retention rules to your project requirements :red_circle: \
+   (check the available properties in `project.properties`)
 1. Build and deploy.\
   (The rules will be automatically imported during system update)
 

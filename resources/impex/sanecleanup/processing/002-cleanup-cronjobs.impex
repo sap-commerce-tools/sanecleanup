@@ -3,9 +3,8 @@
 # Import config properties into impex macros
 UPDATE GenericItem[processor = de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor]; pk[unique = true]
 $sessionLanguage = $config-sanecleanup.jobs.sessionlanguage
-
-$twoWeeks = 1209600
-$oneDay = 86400
+$retentionTimeCronjobs=$config-sanecleanup.retentiontimeseconds.cronjob.generated
+$retentionTimeSolrIndexerJob =$config-sanecleanup.retentiontimeseconds.solrindexerjob.generated
 
 # @readme CronJob (auto-generated)
 # Are there too many (>10) outdated, auto-geneated jobs in your system?
@@ -42,13 +41,13 @@ SELECT {c:pk}, {c:itemType}
  WHERE {trg:pk} IS NULL
    AND {c:code} LIKE '00%'
    AND {t:code} IN ( 'ImpExImportCronJob', 'CatalogVersionSyncCronJob', 'SolrIndexerCronJob' )
-   AND {c:endTime} < ?CALC_RETIREMENT_TIME"                             ; $twoWeeks           ; basicRemoveCleanupAction ;
+   AND {c:endTime} < ?CALC_RETIREMENT_TIME"                             ; $retentionTimeCronjobs           ; basicRemoveCleanupAction ;
                                   ; solrJobRule     ; "
 SELECT {j:pk},{j:itemType}
   FROM {ServicelayerJob AS j LEFT JOIN Trigger AS trg on {trg:job} = {j:pk} }
  WHERE {trg:pk} IS NULL
    AND ({j:code} LIKE 'solrIndexerJob_full_%' OR {j:code} LIKE 'solrIndexerJob_update_%')
-   AND {j:modifiedtime} < ?CALC_RETIREMENT_TIME"                    ; $oneDay             ; basicRemoveCleanupAction ;
+   AND {j:modifiedtime} < ?CALC_RETIREMENT_TIME"                    ; $retentionTimeSolrIndexerJob             ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]; retentionRule(code); batchSize
                    ; cronJobCleanupJob  ; cronJobRule        ; 1000
                    ; solrJobCleanupJob  ; solrJobRule        ; 1000

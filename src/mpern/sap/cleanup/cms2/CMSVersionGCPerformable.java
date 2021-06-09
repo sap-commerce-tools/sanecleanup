@@ -1,7 +1,5 @@
 package mpern.sap.cleanup.cms2;
 
-import de.hybris.platform.cache.AbstractCacheUnit;
-import de.hybris.platform.cache.Cache;
 import de.hybris.platform.cms2.model.CMSVersionModel;
 import de.hybris.platform.cms2.version.service.CMSVersionGCService;
 import de.hybris.platform.core.PK;
@@ -16,7 +14,7 @@ import de.hybris.platform.servicelayer.search.FlexibleSearchQuery;
 import de.hybris.platform.servicelayer.search.SearchResult;
 import de.hybris.platform.servicelayer.type.TypeService;
 import de.hybris.platform.tx.Transaction;
-import de.hybris.platform.util.typesystem.PlatformStringUtils;
+import de.hybris.platform.util.Utilities;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
@@ -183,10 +181,7 @@ public class CMSVersionGCPerformable extends AbstractJobPerformable<CronJobModel
         invalidateCache(batchToDelete);
     }
 
-    //ref. de.hybris.platform.util.Utilities.invalidateCache
     private void invalidateCache(List<PK> batchToDelete) {
-        PK invalidation = batchToDelete.get(0);
-        Object[] key = new Object[]{Cache.CACHEKEY_HJMP, Cache.CACHEKEY_ENTITY, PlatformStringUtils.valueOf(invalidation.getTypeCode()), invalidation};
-        Transaction.current().invalidate(key, 3, AbstractCacheUnit.INVALIDATIONTYPE_REMOVED);
+        batchToDelete.forEach(Utilities::invalidateCache);
     }
 }

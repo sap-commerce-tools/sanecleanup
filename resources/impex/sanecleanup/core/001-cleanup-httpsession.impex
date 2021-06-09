@@ -3,8 +3,7 @@
 # Import config properties into impex macros
 UPDATE GenericItem[processor = de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor]; pk[unique = true]
 $sessionLanguage = $config-sanecleanup.jobs.sessionlanguage
-
-$oneDay = 86400
+$retentionTime = $config-sanecleanup.retentiontimeseconds.storedhttpsession
 
 # @readme StoredHttpSession
 # Excessive amount of session? This is hard to generalize as it highly depends on your site's traffic, but if you are near or over 5 digits, it's probably too much.
@@ -18,7 +17,7 @@ $oneDay = 86400
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]   ; searchQuery; retentionTimeSeconds; actionReference          ;
                                   ; storedHttpSessionRule ; "select {s:pk}, {s:itemtype}
    from {StoredHttpSession as s}
-   where {s:modifiedTime} < ?CALC_RETIREMENT_TIME"                     ; $oneDay             ; basicRemoveCleanupAction ;
+   where {s:modifiedTime} < ?CALC_RETIREMENT_TIME"                     ; $retentionTime             ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]         ; retentionRule(code)   ; batchSize
                    ; storedHttpSessionCleanupJob ; storedHttpSessionRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]             ; job(code)                   ; sessionLanguage(isoCode)[default = $sessionLanguage]
