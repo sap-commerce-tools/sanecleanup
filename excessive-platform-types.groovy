@@ -507,7 +507,7 @@ WHERE
         'check' : { r ->
             def total = r.result[0]
             if (total > 0) {
-                error("Found ${total} orphaned SavedValueEntry (don't belong to a SavedValue) -> delete")
+                error("Found ${total} orphaned SavedValueEntry (parent SavedValue is gone) -> delete")
             }
         }
     ],

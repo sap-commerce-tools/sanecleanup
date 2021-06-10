@@ -34,7 +34,12 @@ The job will remove all log files except the five most recent logs per CronJob.
 
 If have never even thought about that topic - yes!
 
-Here are some queries and "rules of thumb" that help you investigate further.
+You can run the following scripts in the administration console to get a quick overview:
+
+- [`excessive-platform-types.groovy`](excessive-platform-types.groovy) - Generates a report about "known troublemakers"
+- [`check-audit.groovy`](check-audit.groovy) - Check if you have too many audit logs
+
+Here are some additional queries and "rules of thumb" that help you investigate further:
 
 <!-- @queries-start -->
 <table><tr><th>Type(s)</th><th>Query</th><th>Notes</th></tr>
