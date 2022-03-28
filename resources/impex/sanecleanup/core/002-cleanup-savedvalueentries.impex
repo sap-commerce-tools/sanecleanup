@@ -3,6 +3,7 @@
 # Import config properties into impex macros
 UPDATE GenericItem[processor = de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor]; pk[unique = true]
 $sessionLanguage = $config-sanecleanup.jobs.sessionlanguage
+$retentionTime=$config-sanecleanup.retentiontimeseconds.savedvalues.delete
 
 # @readme SavedValues, SavedValueEntry
 # A lot of those items accumulated over the project lifetime.
@@ -48,13 +49,33 @@ $sessionLanguage = $config-sanecleanup.jobs.sessionlanguage
 # FROM {SavedValueEntry as e LEFT JOIN SavedValues AS s ON {e:parent} = {s:pk} }
 # WHERE {s:pk} IS NULL
 INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]   ; searchQuery; retentionTimeSeconds; actionReference          ;
+; savedValuesDeleteRule ; "select {s:pk}, {s:itemtype}
+   from {SavedValues as s }
+   where {s.modifiedItem} IS NULL AND {s.modifiedtime} < ?CALC_RETIREMENT_TIME"                     ; $retentionTime             ; basicRemoveCleanupAction ;
 ; savedValueEntryRule ; "select {e:pk}, {e:itemtype}
    from {SavedValueEntry as e LEFT JOIN SavedValues AS s ON {e:parent} = {s:pk} }
    where {s:pk} IS NULL"                     ; 0             ; basicRemoveCleanupAction ;
+
 INSERT_UPDATE RetentionJob; code[unique = true]         ; retentionRule(code)   ; batchSize
+; savedValuesDeleteCleanupJob ; savedValuesDeleteRule ; 1000
 ; savedValueEntryCleanupJob ; savedValueEntryRule ; 1000
 INSERT_UPDATE CronJob; code[unique = true]             ; job(code)                   ; sessionLanguage(isoCode)[default = $sessionLanguage]
+; savedValuesDeleteCleanupCronJob ; savedValuesDeleteCleanupJob ;
 ; savedValueEntryCleanupCronJob ; savedValueEntryCleanupJob ;
-INSERT Trigger; cronJob(code)[unique = true]    ; cronExpression
+
+
+INSERT_UPDATE CompositeCronJob;code[unique=true];job(code);sessionLanguage(isoCode)[default = $sessionLanguage]
+;savedValuesCleanupCompositeCronJob;compositeJobPerformable;
+INSERT Trigger; cronJob(code)[unique = true]; cronExpression
 # at midnight
-; savedValueEntryCleanupCronJob ; 0 0 0 * * ?
+; savedValuesCleanupCompositeCronJob ; 0 0 0 * * ?
+
+INSERT_UPDATE CompositeEntry;code[unique=true];executableCronJob(code);compositeCronJob(code)[default='savedValuesCleanupCompositeCronJob']
+;savedValuesDeleteCleanupCronJobEntry;savedValuesDeleteCleanupCronJob;
+;savedValueEntryCleanupCronJobEntry;savedValueEntryCleanupCronJob;
+
+UPDATE CompositeCronJob;code[unique=true];compositeEntries(code)
+;savedValuesCleanupCompositeCronJob;"
+savedValuesDeleteCleanupCronJobEntry,
+savedValueEntryCleanupCronJobEntry
+"

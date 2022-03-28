@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<items 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="items.xsd">
+    <itemtypes>
+        <itemtype code="EmailMessage" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="process" />
+                    <key attribute="modifiedTime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+        <itemtype code="EmailAttachment" autocreate="false" generate="false">
+            <indexes>
+              <!-- EmailAttachment is a subtype of Media; index should also cover query for ImpexMedia-->
+                <index name="sanecleanup">
+                    <key attribute="code" />
+                    <key attribute="modifiedTime" />
+                    <key attribute="message" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+        <itemtype code="Cart" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="user" />
+                    <key attribute="saveTime" />
+                    <key attribute="modifiedTime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+        <itemtype code="StoredHttpSession" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="modifiedTime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+        <itemtype code="SavedValues" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="modifiedItem" />
+                    <key attribute="modifiedTime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+        <itemtype code="SavedValueEntry" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="parent" />
+                    <key attribute="itemtype" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+        <itemtype code="CronJob" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="code" />
+                    <key attribute="modifiedtime" />
+                    <key attribute="job" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+        <itemtype code="Job" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="code" />
+                    <key attribute="modifiedtime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+        <itemtype code="DistributedImportProcess" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="code" />
+                    <key attribute="impExImportCronJob" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+        <itemtype code="ImportBatch" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="importContentCode" />
+                    <key attribute="process" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+        <itemtype code="ImportBatchContent" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="code" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+        <itemtype code="BusinessProcess" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="state" />
+                    <key attribute="modifiedtime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+        <itemtype code="TaskCondition" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="task" />
+                    <key attribute="modifiedtime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+        <itemtype code="ProcessTask" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="process" />
+                    <key attribute="modifiedtime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+        <itemtype code="BusinessProcessParameter" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="process" />
+                    <key attribute="modifiedtime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+        <itemtype code="ProcessTaskLog" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="process" />
+                    <key attribute="modifiedtime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+        <itemtype code="DroolsRule" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="code" />
+                    <key attribute="kieBase" />
+                    <key attribute="version" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+        <itemtype code="AbstractRule" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="code" />
+                    <key attribute="status" />
+                    <key attribute="enddate" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+        <itemtype code="SolrIndexOperation" autocreate="false" generate="false">
+            <indexes>
+                <index name="sanecleanup">
+                    <key attribute="endTime" />
+                    <key attribute="modifiedtime" />
+                    <key attribute="itemtype"/>
+                    <include attribute="pk"/>
+                </index>
+            </indexes>
+        </itemtype>
+
+    </itemtypes>
+</items>

@@ -7,7 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-TBD
+### Added
+
+- Cleanup `SavedValue`s for delete operations after one month
+- *Experimental:* Define DB indices to accelearte cleanup queries in CCv2\
+  In case of problems
+  - Report an [issue] in this repository
+  - Cmment out the offending type / index in the `items.xml`
+
+### Changed
+
+- Composite cronjob to cleanup `SavedValue` / `SavedValueEntry` 
+- `ProcessTaskLog` cleanup now checks `modifiedTime` like all the other cleanup jobs
+
+
+### Fixed
+
+- Custom CMS Version GC job (`jdbcVersionGCJob`) is now backwards compatible with 2105 and recent patch releases ([#3]).\
+  If you are on a more recent Commerce version, the job will do nothing. Please use the improved
+  ootb cleanup instead (introduced with [1905.30], [2005.14][2005.14], [2011.9][2011.9]).
+
+### Upgrade Guide
+
+- Remove triggers of cronjobs that are now part of a composite job.
+- Remove custom CMS version gc job
+
+```impex
+REMOVE Trigger; cronJob(code)[unique = true]
+;savedValueEntryCleanupCronJob;
+
+# remove custom job
+REMOVE Cronjob;code[unique = true]
+;cmsVersionGCProcessCleanupCronJob;
+REMOVE RetentionJob; code[unique = true]
+;cmsVersionGCProcessCleanupJob;
+REMOVE FlexibleSearchRetentionRule;code[unique = true];
+;cmsVersionGCProcessRule;
+```
+
+[#3]: https://github.com/sap-commerce-tools/sanecleanup/issues/3
+[2011.9]:https://help.sap.com/docs/SAP_COMMERCE/eed845124da0491e875df8139c4e6e8c/f18f6a711d07462b80137df6ed533eee.html?version=2011#patch-2011.9
+[2005.14]:https://help.sap.com/docs/SAP_COMMERCE/eed845124da0491e875df8139c4e6e8c/f18f6a711d07462b80137df6ed533eee.html?version=2005#patch-2005.14
+[1905.30]:https://help.sap.com/docs/SAP_COMMERCE/eed845124da0491e875df8139c4e6e8c/f18f6a711d07462b80137df6ed533eee.html?version=1905#patch-1905.30
 
 ## [3.3.0] - 2021-06-09
 
@@ -155,3 +196,5 @@ Initial release
 [2.0.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/sap-commerce-tools/sanecleanup/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/sap-commerce-tools/sanecleanup/releases/tag/v1.0.0
+
+[issue]: https://github.com/sap-commerce-tools/sanecleanup/issues

@@ -19,16 +19,22 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
 
 //Sane implementation of Content Version GC process.
 //Same logic, without creating Business Process for every run and fast delete using JDBC batching
-public class CMSVersionGCPerformable extends AbstractJobPerformable<CronJobModel> {
+public class CMSVersionGCPerformable extends AbstractJobPerformable<CronJobModel> implements ApplicationContextAware {
 
     private static final Logger LOG = LoggerFactory.getLogger(CMSVersionGCPerformable.class);
 
@@ -37,11 +43,27 @@ public class CMSVersionGCPerformable extends AbstractJobPerformable<CronJobModel
     private final JdbcTemplate jdbcTemplate;
     private final TypeService typeService;
 
+    private static final String CMSVERSIONGCPROCESS_RELATION;
+
+    static {
+        String value = "";
+        try {
+            Field field = CMSVersionModel.class.getField("_CMSVERSIONGCPROCESS2CMSVERSION");
+            value = (String) field.get(null);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            // ignore; relation not present anymore
+        }
+        CMSVERSIONGCPROCESS_RELATION = value;
+    }
+
+    private ApplicationContext applicationContext;
+
     public CMSVersionGCPerformable(ConfigurationService configurationService, CMSVersionGCService cmsVersionGCService, JdbcTemplate jdbcTemplate, TypeService typeService) {
         this.configurationService = configurationService;
         this.cmsVersionGCService = cmsVersionGCService;
         this.jdbcTemplate = jdbcTemplate;
         this.typeService = typeService;
+
     }
 
     @Override
@@ -51,6 +73,10 @@ public class CMSVersionGCPerformable extends AbstractJobPerformable<CronJobModel
 
     @Override
     public PerformResult perform(CronJobModel cronJobModel) {
+        if (CMSVERSIONGCPROCESS_RELATION.isEmpty() || improvedGCVersionCleanupJobExists()) {
+            LOG.debug("Please use the improved, ootb cmsVersionGCJob. Exiting.");
+            return new PerformResult(CronJobResult.SUCCESS, CronJobStatus.FINISHED);
+        }
         try {
             final List<CMSVersionModel> retainableVersions = getRetainableVersions();
             Set<PK> retainablePKs = collectAllRetainableVersionPKs(retainableVersions);
@@ -67,6 +93,15 @@ public class CMSVersionGCPerformable extends AbstractJobPerformable<CronJobModel
             return new PerformResult(CronJobResult.ERROR, CronJobStatus.UNKNOWN);
         }
         return new PerformResult(CronJobResult.SUCCESS, CronJobStatus.FINISHED);
+    }
+
+    private boolean improvedGCVersionCleanupJobExists() {
+        try {
+            applicationContext.getBean("cmsVersionGCPerformable");
+            return true;
+        } catch (BeansException ignored) {
+        }
+        return false;
     }
 
     // de.hybris.platform.cms2.version.processengine.action.impl.CollectRetainableCMSVersionsGCProcessAction
@@ -149,7 +184,7 @@ public class CMSVersionGCPerformable extends AbstractJobPerformable<CronJobModel
 
     private List<String> prepareDeleteStatements() {
         ComposedTypeModel versionType = typeService.getComposedTypeForClass(CMSVersionModel.class);
-        ComposedTypeModel relationType = typeService.getComposedTypeForCode(CMSVersionModel._CMSVERSIONGCPROCESS2CMSVERSION);
+        ComposedTypeModel relationType = typeService.getComposedTypeForCode(CMSVERSIONGCPROCESS_RELATION);
 
         List<String> statements = new ArrayList<>();
 
@@ -183,5 +218,10 @@ public class CMSVersionGCPerformable extends AbstractJobPerformable<CronJobModel
 
     private void invalidateCache(List<PK> batchToDelete) {
         batchToDelete.forEach(Utilities::invalidateCache);
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 }

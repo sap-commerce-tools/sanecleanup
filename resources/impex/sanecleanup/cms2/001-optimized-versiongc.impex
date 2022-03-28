@@ -1,4 +1,4 @@
-
+#:versions: between("1905.0", "1905.29") or between("2005.0", "2005.13") or between("2011.0", "2011.8")
 # Import config properties into impex macros
 UPDATE GenericItem[processor=de.hybris.platform.commerceservices.impex.impl.ConfigPropertyImportProcessor];pk[unique=true]
 $sessionLanguage=$config-sanecleanup.jobs.sessionlanguage

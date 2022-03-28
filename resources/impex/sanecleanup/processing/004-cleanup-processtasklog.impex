@@ -38,7 +38,7 @@ def ms = spring.getBean('modelService')
 PersistenceUtils.doWithSLDPersistence({ ->
 // TODO: adjust retention period
     def retention = Date.from(ZonedDateTime.now().minus(3, ChronoUnit.MONTHS).toInstant())
-    def processTaskLogQuery = new FlexibleSearchQuery('SELECT {pk} FROM {ProcessTaskLog} WHERE {creationTime} < ?CALC_RETENTION_TIME');
+    def processTaskLogQuery = new FlexibleSearchQuery('SELECT {pk} FROM {ProcessTaskLog} WHERE {modifiedTime} < ?CALC_RETENTION_TIME');
     processTaskLogQuery.addQueryParameter('CALC_RETENTION_TIME', retention)
     processTaskLogQuery.setCount(10000); // TODO: adjust total count
     def processTaskLogs = fss.search(processTaskLogQuery).result

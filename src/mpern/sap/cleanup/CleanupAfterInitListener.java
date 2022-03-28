@@ -23,30 +23,39 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.core.io.support.ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX;
 
 public class CleanupAfterInitListener extends AbstractEventListener<AfterInitializationEndEvent> {
 
     private static final Logger LOG = LoggerFactory.getLogger(CleanupAfterInitListener.class);
+    public static final String VERSIONS_PREFIX = "#:versions:";
 
     private final ImportService importService;
     private final FlexibleSearchService flexibleSearchService;
     private final ModelService modelService;
     private final UserService userService;
     private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    private final VersionRangeEvaluator versionRangeEvaluator;
 
 
     public CleanupAfterInitListener(ImportService importService,
                                     FlexibleSearchService flexibleSearchService,
                                     ModelService modelService,
-                                    UserService userService) {
+                                    UserService userService,
+                                    VersionRangeEvaluator versionRangeEvaluator
+    ) {
         this.importService = importService;
         this.flexibleSearchService = flexibleSearchService;
         this.modelService = modelService;
         this.userService = userService;
+        this.versionRangeEvaluator = versionRangeEvaluator;
     }
 
     @Override
@@ -71,7 +80,27 @@ public class CleanupAfterInitListener extends AbstractEventListener<AfterInitial
             resourceList.sort(Comparator.comparing(Resource::getFilename));
             applicableImpex.addAll(resourceList);
         }
-        return applicableImpex;
+        return applicableImpex.stream()
+                .filter(this::applicableForCurrentVersion)
+                .collect(Collectors.toList());
+    }
+
+    private boolean applicableForCurrentVersion(Resource impex) {
+        String versionExpression = "";
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(impex.getInputStream(), StandardCharsets.UTF_8))) {
+            String line = br.readLine();
+            if (line != null && line.startsWith(VERSIONS_PREFIX)) {
+                versionExpression = line.substring(VERSIONS_PREFIX.length());
+            }
+        } catch (IOException e) {
+            // ignore
+        }
+        boolean result = true;
+        if (!versionExpression.isEmpty()) {
+            result = versionRangeEvaluator.evaluate(versionExpression);
+        }
+        LOG.debug("{}: applicable for current Commerce version? {} ({})", impex.getFilename(), result, versionExpression);
+        return result;
     }
 
     private Map<String, Resource> calculateHashes(List<Resource> applicableImpex) throws Exception {
@@ -89,6 +118,9 @@ public class CleanupAfterInitListener extends AbstractEventListener<AfterInitial
     }
 
     private Map<String, Resource> filterAlreadyImported(Map<String, Resource> hashResource) {
+        if (hashResource.isEmpty()) {
+            return Collections.emptyMap();
+        }
         Map<String, Resource> filtered = new HashMap<>(hashResource);
         FlexibleSearchQuery fsq = new FlexibleSearchQuery("select {hash} from {SystemSetupAudit} where {hash} IN (?maybeNew)");
         fsq.setResultClassList(Collections.singletonList(String.class));

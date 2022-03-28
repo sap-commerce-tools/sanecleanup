@@ -23,7 +23,7 @@ INSERT_UPDATE FlexibleSearchRetentionRule; code[unique = true]; searchQuery; ret
      AND {o:modifiedTime} < ?CALC_RETIREMENT_TIME"                        ; $retentionTime ; basicRemoveCleanupAction ;
 INSERT_UPDATE RetentionJob; code[unique = true]  ; retentionRule(code); batchSize
 ; solrIndexOperationCleanupJob ; solrIndexOperationRule     ; 1000
-INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = en]
+INSERT_UPDATE CronJob; code[unique = true]      ; job(code)            ; sessionLanguage(isoCode)[default = $sessionLanguage]
 ; solrIndexOperationCleanupCronJob ; solrIndexOperationCleanupJob ;
 INSERT Trigger; cronJob(code)[unique = true]; cronExpression
 # every day at 04:00

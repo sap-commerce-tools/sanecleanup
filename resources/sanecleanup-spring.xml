@@ -5,13 +5,18 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+  <bean id="saneVersionRangeEvaluator" class="mpern.sap.cleanup.VersionRangeEvaluator" >
+    <constructor-arg value="#{T(mpern.sap.commerce.build.util.Version).parseVersion('${build.version}')}" />
+  </bean>
+
   <bean id="saneCleanupListener" class="mpern.sap.cleanup.CleanupAfterInitListener" parent="abstractEventListener">
     <constructor-arg ref="importService" />
     <constructor-arg ref="flexibleSearchService" />
     <constructor-arg ref="modelService" />
     <constructor-arg ref="userService" />
+    <constructor-arg ref="saneVersionRangeEvaluator" />
   </bean>
-
+  
   <bean id="jdbcVersionGCPerformable" class="mpern.sap.cleanup.cms2.CMSVersionGCPerformable" parent="abstractJobPerformable">
     <constructor-arg ref="configurationService" />
     <constructor-arg ref="cmsVersionGCService" />
