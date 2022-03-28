@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+TBD
+
+## [3.4.0]
+
 ### Added
 
 - Cleanup `SavedValue`s for delete operations after one month
-- *Experimental:* Define DB indices to accelearte cleanup queries in CCv2\
+- *Experimental:* Define DB indices to accelerate cleanup queries in CCv2\
   In case of problems
   - Report an [issue] in this repository
-  - Cmment out the offending type / index in the `items.xml`
+  - Comment-out the offending type / index in the `items.xml`
 
 ### Changed
 
@@ -30,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Upgrade Guide
 
 - Remove triggers of cronjobs that are now part of a composite job.
-- Remove custom CMS version gc job
+- Remove custom CMS version GC job
 
 ```impex
 REMOVE Trigger; cronJob(code)[unique = true]
@@ -38,11 +42,7 @@ REMOVE Trigger; cronJob(code)[unique = true]
 
 # remove custom job
 REMOVE Cronjob;code[unique = true]
-;cmsVersionGCProcessCleanupCronJob;
-REMOVE RetentionJob; code[unique = true]
-;cmsVersionGCProcessCleanupJob;
-REMOVE FlexibleSearchRetentionRule;code[unique = true];
-;cmsVersionGCProcessRule;
+;jdbcVersionGCCronJob;
 ```
 
 [#3]: https://github.com/sap-commerce-tools/sanecleanup/issues/3
@@ -188,7 +188,8 @@ Initial release
   - Carts
 
 
-[Unreleased]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.3.0...HEAD
+[Unreleased]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.1.0...v.3.2.0
 [3.1.0]: https://github.com/sap-commerce-tools/sanecleanup/compare/v3.0.0...v3.1.0
