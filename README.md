@@ -14,12 +14,23 @@ Sensible defaults for data retention and cleanup for SAP Commerce, based on my C
     ````xml
    <extension name="sanecleanup" />
     ````
+
 1. :red_circle: Adapt the retention rules to your project requirements :red_circle: \
    (check the available properties in `project.properties`)
 1. Build and deploy.\
   (The rules will be automatically imported during system update)
 
-**Warning**\
+    > If you get a build error regarding missing types like the example below:
+    >
+    > 1. Open `sanecleanup-items.xml`
+    > 1. Search for the type
+    > 1. Comment-out the whole `<itemtype>` tag
+    >
+    > ```text
+    > invalid index sanecleanup for type _TYPE_ on [...] declared at ((sanecleanup))::YIndex[sanecleanup-items.xml:...] due to missing enclosing type '_TYPE_'
+    > ```
+
+**WARNING**\
 The very first execution of the retention cron jobs will take a while, depending on how long your poject
 is already live and if you have cleaned up anything in the past.
 
