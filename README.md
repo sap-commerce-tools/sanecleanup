@@ -477,9 +477,7 @@ WHERE
 
 </td><td>
 
-Is there an excessive amount of "premature events"? Or very old (older than a a few weeks) events?
-
-https://help.sap.com/viewer/d0224eca81e249cb821f2cdf45a82ace/2011/en-US/7e8ff9d7653f43e8890bc8eb395d52a7.html
+Is there an excessive amount of ["premature events"](https://help.sap.com/docs/SAP_COMMERCE_CLOUD_PUBLIC_CLOUD/aa417173fe4a4ba5a473c93eb730a417/7e8ff9d7653f43e8890bc8eb395d52a7.html?locale=en-US#premature-events)? Or very old (older than a a few weeks) events?
 
 </td></tr>
 </table>
