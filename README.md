@@ -1,6 +1,6 @@
 # sanecleanup
 
-![SAP Commerce 1811+](https://img.shields.io/badge/Commerce-2005+-0051ab?logo=SAP)
+![SAP Commerce 1811+](https://img.shields.io/badge/Commerce-2205+-0051ab?logo=SAP)
 
 Sensible defaults for data retention and cleanup for SAP Commerce, based on my CX Works article [Data Maintenance and Cleanup][article]
 
